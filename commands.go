@@ -37,8 +37,10 @@ func NewCommandWithUsage(
 	name, short_description, long_description string,
 	init InitUsageFunc) *Command {
 	cmd := &Command{Name: name,
-		ShortDescription: short_description,
-		LongDescription:  long_description}
+		ShortDescription: strings.TrimSpace(short_description),
+		// FIXME: the long description should be formatted more than
+		// just trimming.
+		LongDescription: strings.TrimSpace(long_description)}
 	cmd.Flags = flag.NewFlagSet(name, flag.ExitOnError)
 	cmd.Params = params.NewParamSet(name) // flags?
 	cmd.UsageCB, cmd.RunCB = init(cmd.Flags, cmd.Params)
