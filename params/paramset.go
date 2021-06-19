@@ -45,7 +45,7 @@ func (p *ParamSet) PrintDefaults() {
 
 func NewParamSet(name string) *ParamSet {
 	argset := &ParamSet{name: name,
-		params: []*Param{}, args: []string{}}
+		params: []*Param{}, args: []string{}, Suffix: ""}
 	argset.Usage = argset.PrintDefaults
 	argset.out = os.Stderr
 	return argset
@@ -89,8 +89,4 @@ func stringParser(target *string) Parser {
 func (p *ParamSet) StringVar(target *string, name, desc string) {
 	param := &Param{name, desc, stringParser(target)}
 	p.params = append(p.params, param)
-}
-
-func (p *ParamSet) SetSuffix(suffix string) {
-	p.Suffix = suffix
 }
