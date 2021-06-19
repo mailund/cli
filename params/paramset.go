@@ -91,6 +91,6 @@ func (p *ParamSet) StringVar(target *string, name, desc string) {
 	p.params = append(p.params, param)
 }
 
-func (p *ParamsSet) SetSuffix(suffix string) {
+func (p *ParamSet) SetSuffix(suffix string) {
 	p.Suffix = suffix
 }
