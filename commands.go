@@ -96,6 +96,7 @@ func NewMenu(name, short_description, long_description string, subcmds ...*Comma
 	init := func(f *flag.FlagSet, p *params.ParamSet) (UsageFunc, RunFunc) {
 		var command string
 		p.StringVar(&command, "cmd", "command to run")
+		p.Suffix = "..." // Indicate that there are more parameters...
 
 		defaultUsage := DefaultUsage(
 			name, short_description, long_description, f, p)
