@@ -10,18 +10,20 @@ import (
 )
 
 type (
-	UsageFunc = func()
-	RunFunc   = func(args []string)
-	InitFunc  = func(f *flag.FlagSet, a *params.ParamSet) (UsageFunc, RunFunc)
+	UsageFunc     = func()
+	RunFunc       = func(args []string)
+	InitFunc      = func(f *flag.FlagSet, a *params.ParamSet) RunFunc
+	InitUsageFunc = func(f *flag.FlagSet, a *params.ParamSet) (UsageFunc, RunFunc)
 )
 
 type Command struct {
-	Name        string
-	Description string
-	Flags       *flag.FlagSet
-	Params      *params.ParamSet
-	UsageCB     UsageFunc
-	RunCB       RunFunc
+	Name             string
+	ShortDescription string
+	LongDescription  string
+	Flags            *flag.FlagSet
+	Params           *params.ParamSet
+	UsageCB          UsageFunc
+	RunCB            RunFunc
 }
 
 func (cmd Command) Usage() { cmd.UsageCB() }
@@ -31,10 +33,12 @@ func (cmd Command) Run(args []string) {
 	cmd.RunCB(cmd.Params.Args())
 }
 
-func NewCommand(
-	name, description string,
-	init InitFunc) *Command {
-	cmd := &Command{Name: name, Description: description}
+func NewCommandWithUsage(
+	name, short_description, long_description string,
+	init InitUsageFunc) *Command {
+	cmd := &Command{Name: name,
+		ShortDescription: short_description,
+		LongDescription:  long_description}
 	cmd.Flags = flag.NewFlagSet(name, flag.ExitOnError)
 	cmd.Params = params.NewParamSet(name) // flags?
 	cmd.UsageCB, cmd.RunCB = init(cmd.Flags, cmd.Params)
@@ -48,21 +52,32 @@ func NewCommand(
 	return cmd
 }
 
-func DefaultUsage(
-	name string, f *flag.FlagSet,
-	p *params.ParamSet) UsageFunc {
+func NewCommand(name, short_description, long_description string, init InitFunc) *Command {
+	return NewCommandWithUsage(name, short_description, long_description,
+		func(f *flag.FlagSet, p *params.ParamSet) (UsageFunc, RunFunc) {
+			return DefaultUsage(name, short_description, long_description, f, p),
+				init(f, p)
+		})
+}
+
+func DefaultUsage(name, description, long_description string,
+	f *flag.FlagSet, p *params.ParamSet) UsageFunc {
 	return func() {
 		fmt.Fprintf(f.Output(),
 			"Usage: %s [options] %s\n\n",
 			name, strings.Join(p.ParamNames(), " "))
+		fmt.Fprintf(f.Output(), "%s\n", description)
 		fmt.Fprintf(f.Output(), "Options:\n")
 		f.PrintDefaults()
 		fmt.Fprintf(f.Output(), "\n")
 		p.PrintDefaults()
+		if len(long_description) > 0 {
+			fmt.Fprintf(f.Output(), "\n%s\n", long_description)
+		}
 	}
 }
 
-func NewMenu(name, description string, subcmds ...*Command) *Command {
+func NewMenu(name, short_description, long_description string, subcmds ...*Command) *Command {
 	subcommands := map[string]*Command{}
 	for _, cmd := range subcmds {
 		subcommands[cmd.Name] = cmd
@@ -73,12 +88,15 @@ func NewMenu(name, description string, subcmds ...*Command) *Command {
 		p.StringVar(&command, "cmd", "command to run")
 
 		usage := func() {
-			DefaultUsage(name, f, p)()
+			DefaultUsage(name, short_description, "", f, p)()
 			fmt.Fprintf(f.Output(), "\nCommands:\n")
 			for name, cmd := range subcommands {
-				fmt.Fprintf(f.Output(), "\t%s\t%s\n", name, cmd.Description)
+				fmt.Fprintf(f.Output(), "\t%s\t%s\n", name, cmd.ShortDescription)
 			}
 			fmt.Fprintf(f.Output(), "\n")
+			if len(long_description) > 0 {
+				fmt.Fprintf(f.Output(), "\n%s\n", long_description)
+			}
 		}
 		run := func(args []string) {
 			if subcmd, ok := subcommands[command]; ok {
@@ -93,5 +111,5 @@ func NewMenu(name, description string, subcmds ...*Command) *Command {
 		return usage, run
 	}
 
-	return NewCommand(name, description, init)
+	return NewCommandWithUsage(name, short_description, long_description, init)
 }
