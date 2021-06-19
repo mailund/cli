@@ -28,6 +28,10 @@ type ParamSet struct {
 
 	// You can assign to usage to change the help info.
 	Usage UsageFunc
+
+	// String that comes after the parameter names in usage strings
+	// if you set it
+	Suffix string
 }
 
 func (p *ParamSet) Output() io.Writer { return p.out }
@@ -48,9 +52,16 @@ func NewParamSet(name string) *ParamSet {
 }
 
 func (p *ParamSet) ParamNames() []string {
-	names := make([]string, len(p.params))
+	n := len(p.params)
+	if p.Suffix != "" {
+		n++
+	}
+	names := make([]string, n)
 	for i, param := range p.params {
 		names[i] = param.name
+	}
+	if p.Suffix != "" {
+		names[n-1] = p.Suffix
 	}
 	return names
 }
@@ -78,4 +89,8 @@ func stringParser(target *string) Parser {
 func (p *ParamSet) StringVar(target *string, name, desc string) {
 	param := &Param{name, desc, stringParser(target)}
 	p.params = append(p.params, param)
+}
+
+func (p *ParamsSet) SetSuffix(suffix string) {
+	p.Suffix = suffix
 }

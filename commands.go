@@ -37,10 +37,8 @@ func NewCommandWithUsage(
 	name, short_description, long_description string,
 	init InitUsageFunc) *Command {
 	cmd := &Command{Name: name,
-		ShortDescription: strings.TrimSpace(short_description),
-		// FIXME: the long description should be formatted more than
-		// just trimming.
-		LongDescription: strings.TrimSpace(long_description)}
+		ShortDescription: short_description,
+		LongDescription:  long_description}
 	cmd.Flags = flag.NewFlagSet(name, flag.ExitOnError)
 	cmd.Params = params.NewParamSet(name) // flags?
 	cmd.UsageCB, cmd.RunCB = init(cmd.Flags, cmd.Params)
@@ -57,25 +55,35 @@ func NewCommandWithUsage(
 func NewCommand(name, short_description, long_description string, init InitFunc) *Command {
 	return NewCommandWithUsage(name, short_description, long_description,
 		func(f *flag.FlagSet, p *params.ParamSet) (UsageFunc, RunFunc) {
-			return DefaultUsage(name, short_description, long_description, f, p),
-				init(f, p)
+			usage := DefaultUsage(name, short_description, long_description, f, p)
+			run := init(f, p)
+			return usage, run
 		})
 }
 
 func DefaultUsage(name, description, long_description string,
 	f *flag.FlagSet, p *params.ParamSet) UsageFunc {
+
+	// FIXME: don't know if this is the right place to do this
+	// FIXME: long_description needs more formatting than just trimming
+	long_description = strings.TrimSpace(long_description)
+
 	return func() {
 		fmt.Fprintf(f.Output(),
 			"Usage: %s [options] %s\n\n",
 			name, strings.Join(p.ParamNames(), " "))
-		fmt.Fprintf(f.Output(), "%s\n", description)
+
+		if len(long_description) > 0 {
+			fmt.Fprintf(f.Output(), "\n%s\n", long_description)
+		} else {
+			fmt.Fprintf(f.Output(), "%s\n", description)
+		}
+
+		// Print options and arguments at the bottom.
 		fmt.Fprintf(f.Output(), "Options:\n")
 		f.PrintDefaults()
 		fmt.Fprintf(f.Output(), "\n")
 		p.PrintDefaults()
-		if len(long_description) > 0 {
-			fmt.Fprintf(f.Output(), "\n%s\n", long_description)
-		}
 	}
 }
 
@@ -89,16 +97,17 @@ func NewMenu(name, short_description, long_description string, subcmds ...*Comma
 		var command string
 		p.StringVar(&command, "cmd", "command to run")
 
+		defaultUsage := DefaultUsage(
+			name, short_description, long_description, f, p)
+
 		usage := func() {
-			DefaultUsage(name, short_description, "", f, p)()
+			defaultUsage()
+			// add commands to usage...
 			fmt.Fprintf(f.Output(), "\nCommands:\n")
 			for name, cmd := range subcommands {
-				fmt.Fprintf(f.Output(), "\t%s\t%s\n", name, cmd.ShortDescription)
+				fmt.Fprintf(f.Output(), "  %s\n\t%s\n", name, cmd.ShortDescription)
 			}
 			fmt.Fprintf(f.Output(), "\n")
-			if len(long_description) > 0 {
-				fmt.Fprintf(f.Output(), "\n%s\n", long_description)
-			}
 		}
 		run := func(args []string) {
 			if subcmd, ok := subcommands[command]; ok {
