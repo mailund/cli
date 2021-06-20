@@ -49,6 +49,34 @@ Arguments:
 	if msg != expected {
 		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
 	}
+
+	cmd = cli.NewCommand("name", "short", "", init)
+
+	builder = new(strings.Builder)
+	cmd.SetOutput(builder)
+	cmd.Usage()
+	msg = builder.String()
+	expected = `Usage: name [options] bar
+        
+        
+short
+	
+Options:
+  -foo
+	set foo
+  -help
+	show help for name
+	
+Arguments:
+  bar
+	a bar
+
+`
+	msg = space.ReplaceAllString(msg, " ")
+	expected = space.ReplaceAllString(expected, " ")
+	if msg != expected {
+		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
+	}
 }
 
 func TestCommandCalled(t *testing.T) {

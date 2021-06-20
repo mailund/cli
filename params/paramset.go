@@ -230,6 +230,28 @@ func intParser(target *int) func(string) error {
 	}
 }
 
+func boolParser(target *bool) func(string) error {
+	return func(arg string) error {
+		if val, err := strconv.ParseBool(arg); err != nil {
+			return fmt.Errorf("argument `%s` cannot be parsed as a bool", arg)
+		} else {
+			*target = val
+			return nil
+		}
+	}
+}
+
+func floatParser(target *float64) func(string) error {
+	return func(arg string) error {
+		if val, err := strconv.ParseFloat(arg, 64); err != nil {
+			return fmt.Errorf("argument `%s` cannot be parsed as a float", arg)
+		} else {
+			*target = val
+			return nil
+		}
+	}
+}
+
 // StringVar appends a string argument to the set. If the
 // parameter set is parsed succesfully, the parsed value for this
 // parameter will have been written to target.
@@ -282,6 +304,58 @@ func (p *ParamSet) Int(name, desc string) *int {
 	return &x
 }
 
+// BoolVar appends a boolean argument to the set. If the
+// parameter set is parsed succesfully, the parsed value for this
+// parameter will have been written to target.
+//
+// Parameters:
+//   - target: Pointer to where the parsed argument should be written.
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+func (p *ParamSet) BoolVar(target *bool, name, desc string) {
+	p.Func(name, desc, boolParser(target))
+}
+
+// Bool appends a boolean argument to the set and returns
+// a pointer to the new variable's target. If the
+// parameter set is parsed succesfully, the parsed value for this
+// parameter will have been written to target.
+//
+// Parameters:
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+func (p *ParamSet) Bool(name, desc string) *bool {
+	var x bool
+	p.BoolVar(&x, name, desc)
+	return &x
+}
+
+// FloatVar appends a floating point argument to the set. If the
+// parameter set is parsed succesfully, the parsed value for this
+// parameter will have been written to target.
+//
+// Parameters:
+//   - target: Pointer to where the parsed argument should be written.
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+func (p *ParamSet) FloatVar(target *float64, name, desc string) {
+	p.Func(name, desc, floatParser(target))
+}
+
+// Float appends a floating point argument to the set and returns
+// a pointer to the new variable's target. If the
+// parameter set is parsed succesfully, the parsed value for this
+// parameter will have been written to target.
+//
+// Parameters:
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+func (p *ParamSet) Float(name, desc string) *float64 {
+	var x float64
+	p.FloatVar(&x, name, desc)
+	return &x
+}
+
 // Func appends a callback function as an argument. When
 // the parameter set is parsed, this function will be called.
 // If the function returns nil, the parser assumes that all
@@ -299,6 +373,51 @@ func (p *ParamSet) Func(name, desc string, fn func(string) error) {
 func variadicStringParser(target *[]string) func([]string) error {
 	return func(args []string) error {
 		*target = args
+		return nil
+	}
+}
+
+func variadicBoolParser(target *[]bool) func([]string) error {
+	return func(args []string) error {
+		res := make([]bool, len(args))
+		for i, x := range args {
+			if val, err := strconv.ParseBool(x); err == nil {
+				res[i] = val
+			} else {
+				return err
+			}
+		}
+		*target = res
+		return nil
+	}
+}
+
+func variadicIntParser(target *[]int) func([]string) error {
+	return func(args []string) error {
+		res := make([]int, len(args))
+		for i, x := range args {
+			if val, err := strconv.Atoi(x); err == nil {
+				res[i] = val
+			} else {
+				return err
+			}
+		}
+		*target = res
+		return nil
+	}
+}
+
+func variadicFloatParser(target *[]float64) func([]string) error {
+	return func(args []string) error {
+		res := make([]float64, len(args))
+		for i, x := range args {
+			if val, err := strconv.ParseFloat(x, 64); err == nil {
+				res[i] = val
+			} else {
+				return err
+			}
+		}
+		*target = res
 		return nil
 	}
 }
@@ -328,6 +447,90 @@ func (p *ParamSet) VariadicStringVar(target *[]string, name, desc string, min in
 func (p *ParamSet) VariadicString(name, desc string, min int) *[]string {
 	var x = []string{}
 	p.VariadicStringVar(&x, name, desc, min)
+	return &x
+}
+
+// VariadicBoolVar install a variadic bool argument
+// as the last parameter(s) for the parameter set.
+//
+// Parameters:
+//   - target: Pointer to where the parsed arguments should be written.
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+//   - min: The minumum number of arguments that the command line must
+//     have for this parameter.
+func (p *ParamSet) VariadicBoolVar(target *[]bool, name, desc string, min int) {
+	p.VariadicFunc(name, desc, min, variadicBoolParser(target))
+}
+
+// VariadicBool install a variadic bool argument
+// as the last parameter(s) for the parameter set. It returns a pointer
+// to where the parsed values will go if parsing is successfull.
+//
+// Parameters:
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+//   - min: The minumum number of arguments that the command line must
+//     have for this parameter.
+func (p *ParamSet) VariadicBool(name, desc string, min int) *[]bool {
+	var x = []bool{}
+	p.VariadicBoolVar(&x, name, desc, min)
+	return &x
+}
+
+// VariadicIntVar install a variadic int argument
+// as the last parameter(s) for the parameter set.
+//
+// Parameters:
+//   - target: Pointer to where the parsed arguments should be written.
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+//   - min: The minumum number of arguments that the command line must
+//     have for this parameter.
+func (p *ParamSet) VariadicIntVar(target *[]int, name, desc string, min int) {
+	p.VariadicFunc(name, desc, min, variadicIntParser(target))
+}
+
+// VariadicInt install a variadic int argument
+// as the last parameter(s) for the parameter set. It returns a pointer
+// to where the parsed values will go if parsing is successfull.
+//
+// Parameters:
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+//   - min: The minumum number of arguments that the command line must
+//     have for this parameter.
+func (p *ParamSet) VariadicInt(name, desc string, min int) *[]int {
+	var x = []int{}
+	p.VariadicIntVar(&x, name, desc, min)
+	return &x
+}
+
+// VariadicIntVar install a variadic float argument
+// as the last parameter(s) for the parameter set.
+//
+// Parameters:
+//   - target: Pointer to where the parsed arguments should be written.
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+//   - min: The minumum number of arguments that the command line must
+//     have for this parameter.
+func (p *ParamSet) VariadicFloatVar(target *[]float64, name, desc string, min int) {
+	p.VariadicFunc(name, desc, min, variadicFloatParser(target))
+}
+
+// VariadicInt install a variadic float argument
+// as the last parameter(s) for the parameter set. It returns a pointer
+// to where the parsed values will go if parsing is successfull.
+//
+// Parameters:
+//   - name: Name of the argument, used when printing usage.
+//   - desc: Description of the argument. Used when printing usage.
+//   - min: The minumum number of arguments that the command line must
+//     have for this parameter.
+func (p *ParamSet) VariadicFloat(name, desc string, min int) *[]float64 {
+	var x = []float64{}
+	p.VariadicFloatVar(&x, name, desc, min)
 	return &x
 }
 

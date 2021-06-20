@@ -321,3 +321,67 @@ func TestInt(t *testing.T) {
 		t.Errorf("Unexpected error message %s", errmsg)
 	}
 }
+
+func TestBool(t *testing.T) {
+	var failed = false
+	failure.Failure = func() { failed = true }
+
+	p := params.NewParamSet("test", params.ExitOnError)
+	bp := p.Bool("var", "")
+	p.Parse([]string{"1"})
+	if !*bp {
+		t.Errorf("Parse error, val is %t", *bp)
+	}
+	p.Parse([]string{"0"})
+	if *bp {
+		t.Errorf("Parse error, val is %t", *bp)
+	}
+	p.Parse([]string{"false"})
+	if *bp {
+		t.Errorf("Parse error, val is %t", *bp)
+	}
+	p.Parse([]string{"true"})
+	if !*bp {
+		t.Errorf("Parse error, val is %t", *bp)
+	}
+
+	builder := new(strings.Builder)
+	p.SetOutput(builder)
+	err := p.Parse([]string{"foo"})
+	if err == nil {
+		t.Error("Expected an error")
+	}
+	if !failed {
+		t.Error("Expected to fail")
+	}
+	errmsg := builder.String()
+	if !strings.HasPrefix(errmsg, `Error parsing parameter var='foo'`) {
+		t.Errorf("Unexpected error message %s", errmsg)
+	}
+}
+
+func TestFloat(t *testing.T) {
+	var failed = false
+	failure.Failure = func() { failed = true }
+
+	p := params.NewParamSet("test", params.ExitOnError)
+	x := p.Float("var", "")
+	p.Parse([]string{"3.14"})
+	if *x != 3.14 {
+		t.Errorf("Parse error, x is %f", *x)
+	}
+
+	builder := new(strings.Builder)
+	p.SetOutput(builder)
+	err := p.Parse([]string{"foo"})
+	if err == nil {
+		t.Error("Expected an error")
+	}
+	if !failed {
+		t.Error("Expected to fail")
+	}
+	errmsg := builder.String()
+	if !strings.HasPrefix(errmsg, `Error parsing parameter var='foo'`) {
+		t.Errorf("Unexpected error message %s", errmsg)
+	}
+}
