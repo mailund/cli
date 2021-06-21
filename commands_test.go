@@ -209,13 +209,7 @@ func TestMenuUsage(t *testing.T) {
 	if !strings.HasPrefix(menuUsage, defaultUsage) {
 		t.Error("Expected menu usage to start with default usage")
 	}
-	if !strings.HasSuffix(menuUsage, `Commands:
-  x
-	do x
-  y
-	do y
-
-`) {
+	if !strings.HasSuffix(menuUsage, "Commands:\n  x\n\tdo x\n  y\n\tdo y\n\n") {
 		t.Error("Expected commands at the end of menu usage")
 		fmt.Println("The usage output was:")
 		fmt.Println(menuUsage)
