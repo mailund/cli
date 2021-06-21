@@ -116,7 +116,7 @@ cmd := cli.NewCommand(
 		var round bool
 		var args []float64
 
-        // Install arguments, one as a flag and one as a positional arg
+		// Install arguments, one as a flag and one as a positional arg
 		cmd.Flags.BoolVar(&round, "round", false, "round off result")
 		cmd.Params.VariadicFloatVar(&args, "args", "arg [args...]", 0)
 
