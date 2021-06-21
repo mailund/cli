@@ -164,14 +164,14 @@ func TestParam(t *testing.T) {
 
 func TestMenu(t *testing.T) {
 	xCalled, yCalled := false, false
-	init_func := func(b *bool) func(*cli.Command) func() {
+	initFunc := func(b *bool) func(*cli.Command) func() {
 		return func(cmd *cli.Command) func() {
 			return func() { *b = true }
 		}
 	}
 	menu := cli.NewMenu("", "", "",
-		cli.NewCommand("x", "", "", init_func(&xCalled)),
-		cli.NewCommand("y", "", "", init_func(&yCalled)),
+		cli.NewCommand("x", "", "", initFunc(&xCalled)),
+		cli.NewCommand("y", "", "", initFunc(&yCalled)),
 	)
 
 	menu.Run([]string{"x"})

@@ -224,8 +224,8 @@ func intParser(target *int) func(string) error {
 			return fmt.Errorf("argument `%s` cannot be parsed as an integer", arg)
 		} else {
 			*target = val
-			return nil
 		}
+		return nil
 	}
 }
 
@@ -235,8 +235,8 @@ func boolParser(target *bool) func(string) error {
 			return fmt.Errorf("argument `%s` cannot be parsed as a bool", arg)
 		} else {
 			*target = val
-			return nil
 		}
+		return nil
 	}
 }
 
@@ -246,8 +246,8 @@ func floatParser(target *float64) func(string) error {
 			return fmt.Errorf("argument `%s` cannot be parsed as a float", arg)
 		} else {
 			*target = val
-			return nil
 		}
+		return nil
 	}
 }
 
