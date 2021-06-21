@@ -67,7 +67,7 @@ type ParamSet struct {
 	last *variadicParam
 }
 
-// SetOuput specifies where usage output and error messages should
+// SetOutput specifies where usage output and error messages should
 // be written to.
 //
 // Parameters:
@@ -83,12 +83,12 @@ func (p *ParamSet) PrintDefaults() {
 	if p.NParams() == 0 {
 		return // nothing to print...
 	}
-	fmt.Fprintf(p.out, "Arguments:\n")
+	fmt.Fprintf(p.Output(), "Arguments:\n")
 	for _, par := range p.params {
-		fmt.Fprintf(p.out, "  %s\n\t%s\n", par.name, par.desc)
+		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", par.name, par.desc)
 	}
 	if p.last != nil {
-		fmt.Fprintf(p.out, "  %s\n\t%s\n", p.last.name, p.last.desc)
+		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", p.last.name, p.last.desc)
 	}
 }
 
@@ -154,7 +154,7 @@ func (p *ParamSet) Parse(args []string) error {
 	if len(args) < minParams {
 		switch p.ErrorFlag {
 		case ExitOnError:
-			fmt.Fprintf(p.out,
+			fmt.Fprintf(p.Output(),
 				"Too few arguments for command '%s'\n\n",
 				p.Name)
 			p.Usage()
@@ -167,7 +167,7 @@ func (p *ParamSet) Parse(args []string) error {
 	if p.last == nil && len(args) > len(p.params) {
 		switch p.ErrorFlag {
 		case ExitOnError:
-			fmt.Fprintf(p.out,
+			fmt.Fprintf(p.Output(),
 				"Too many arguments for command '%s'\n\n",
 				p.Name)
 			p.Usage()
@@ -181,9 +181,8 @@ func (p *ParamSet) Parse(args []string) error {
 		if err := par.parser(args[i]); err != nil {
 			switch p.ErrorFlag {
 			case ExitOnError:
-				fmt.Fprintf(p.out, "Error parsing parameter %s='%s'\n",
-					par.name, args[i])
-				fmt.Fprintf(p.out, "\t%v\n", err)
+				fmt.Fprintf(p.Output(), "Error parsing parameter %s='%s', %s.\n",
+					par.name, args[i], err.Error())
 				failure.Failure()
 				fallthrough
 			case ContinueOnError:
@@ -197,9 +196,8 @@ func (p *ParamSet) Parse(args []string) error {
 		if err := p.last.parser(rest); err != nil {
 			switch p.ErrorFlag {
 			case ExitOnError:
-				fmt.Fprintf(p.out, "Error parsing parameters %s='%v'\n",
-					p.last.name, rest)
-				fmt.Fprintf(p.out, "%v\n", err)
+				fmt.Fprintf(p.Output(), "Error parsing parameters %s='%v', %s.\n",
+					p.last.name, rest, err.Error())
 				failure.Failure()
 				fallthrough
 			case ContinueOnError:
@@ -220,33 +218,33 @@ func stringParser(target *string) func(string) error {
 
 func intParser(target *int) func(string) error {
 	return func(arg string) error {
-		if val, err := strconv.Atoi(arg); err != nil {
+		val, err := strconv.ParseInt(arg, 0, 32)
+		if err != nil {
 			return fmt.Errorf("argument `%s` cannot be parsed as an integer", arg)
-		} else {
-			*target = val
 		}
+		*target = int(val)
 		return nil
 	}
 }
 
 func boolParser(target *bool) func(string) error {
 	return func(arg string) error {
-		if val, err := strconv.ParseBool(arg); err != nil {
+		val, err := strconv.ParseBool(arg)
+		if err != nil {
 			return fmt.Errorf("argument `%s` cannot be parsed as a bool", arg)
-		} else {
-			*target = val
 		}
+		*target = val
 		return nil
 	}
 }
 
 func floatParser(target *float64) func(string) error {
 	return func(arg string) error {
-		if val, err := strconv.ParseFloat(arg, 64); err != nil {
+		val, err := strconv.ParseFloat(arg, 64)
+		if err != nil {
 			return fmt.Errorf("argument `%s` cannot be parsed as a float", arg)
-		} else {
-			*target = val
 		}
+		*target = val
 		return nil
 	}
 }
@@ -380,11 +378,11 @@ func variadicBoolParser(target *[]bool) func([]string) error {
 	return func(args []string) error {
 		res := make([]bool, len(args))
 		for i, x := range args {
-			if val, err := strconv.ParseBool(x); err == nil {
-				res[i] = val
-			} else {
-				return err
+			val, err := strconv.ParseBool(x)
+			if err != nil {
+				return fmt.Errorf("cannot parse '%s' as boolean", x)
 			}
+			res[i] = val
 		}
 		*target = res
 		return nil
@@ -395,11 +393,11 @@ func variadicIntParser(target *[]int) func([]string) error {
 	return func(args []string) error {
 		res := make([]int, len(args))
 		for i, x := range args {
-			if val, err := strconv.Atoi(x); err == nil {
-				res[i] = val
-			} else {
-				return err
+			val, err := strconv.ParseInt(x, 0, 32)
+			if err != nil {
+				return fmt.Errorf("cannot parse '%s' as integer", x)
 			}
+			res[i] = int(val)
 		}
 		*target = res
 		return nil
@@ -410,11 +408,11 @@ func variadicFloatParser(target *[]float64) func([]string) error {
 	return func(args []string) error {
 		res := make([]float64, len(args))
 		for i, x := range args {
-			if val, err := strconv.ParseFloat(x, 64); err == nil {
-				res[i] = val
-			} else {
-				return err
+			val, err := strconv.ParseFloat(x, 64)
+			if err != nil {
+				return fmt.Errorf("cannot parse '%s' as float", x)
 			}
+			res[i] = val
 		}
 		*target = res
 		return nil

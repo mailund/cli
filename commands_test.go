@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"flag"
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -162,28 +163,79 @@ func TestParam(t *testing.T) {
 	}
 }
 
-func TestMenu(t *testing.T) {
+func makeMenu() (*bool, *bool, *cli.Command) {
 	xCalled, yCalled := false, false
 	initFunc := func(b *bool) func(*cli.Command) func() {
 		return func(cmd *cli.Command) func() {
 			return func() { *b = true }
 		}
 	}
-	menu := cli.NewMenu("", "", "",
-		cli.NewCommand("x", "", "", initFunc(&xCalled)),
-		cli.NewCommand("y", "", "", initFunc(&yCalled)),
+	menu := cli.NewMenu("menu", "", "Dispatch to subcommands",
+		cli.NewCommand("x", "do x", "", initFunc(&xCalled)),
+		cli.NewCommand("y", "do y", "", initFunc(&yCalled)),
 	)
+	return &xCalled, &yCalled, menu
+}
+
+func TestMenu(t *testing.T) {
+	xCalled, yCalled, menu := makeMenu()
 
 	menu.Run([]string{"x"})
-	if !xCalled {
+	if !*xCalled {
 		t.Error("Command x wasn't called")
 	}
-	if yCalled {
+	if *yCalled {
 		t.Error("y was called too soon")
 	}
 	menu.Run([]string{"y"})
-	if !yCalled {
+	if !*yCalled {
 		t.Error("Command y wasn't called")
 	}
+}
 
+func TestMenuUsage(t *testing.T) {
+	_, _, menu := makeMenu()
+
+	builder := new(strings.Builder)
+	menu.SetOutput(builder)
+	cli.DefaultUsage(menu)
+	defaultUsage := builder.String()
+
+	builder = new(strings.Builder)
+	menu.SetOutput(builder)
+	menu.Usage()
+	menuUsage := builder.String()
+
+	if !strings.HasPrefix(menuUsage, defaultUsage) {
+		t.Error("Expected menu usage to start with default usage")
+	}
+	if !strings.HasSuffix(menuUsage, `Commands:
+  x
+	do x
+  y
+	do y
+
+`) {
+		t.Error("Expected commands at the end of menu usage")
+		fmt.Println("The usage output was:")
+		fmt.Println(menuUsage)
+	}
+}
+
+func TestMenuFailure(t *testing.T) {
+	failed := false
+	failure.Failure = func() { failed = true }
+	_, _, menu := makeMenu()
+
+	builder := new(strings.Builder)
+	menu.SetOutput(builder)
+	menu.Run([]string{"z"})
+	errmsg := builder.String()
+
+	if !failed {
+		t.Error("Expected command to fail")
+	}
+	if !strings.HasPrefix(errmsg, "'z' is not a valid command for menu.") {
+		t.Errorf("Expected different error message than %s\n", errmsg)
+	}
 }

@@ -117,7 +117,7 @@ func DefaultUsage(cmd *Command) func() {
 			cmd.Name, cmd.Params.ShortUsage())
 
 		if len(cmd.LongDescription) > 0 {
-			fmt.Fprintf(cmd.Output(), "\n%s\n\n", cmd.LongDescription)
+			fmt.Fprintf(cmd.Output(), "%s\n\n", cmd.LongDescription)
 		} else {
 			fmt.Fprintf(cmd.Output(), "%s\n\n", cmd.ShortDescription)
 		}
@@ -149,14 +149,14 @@ func NewMenu(name, short, long string, subcmds ...*Command) *Command {
 		var command string
 		var cmdArgs []string
 		cmd.Params.StringVar(&command, "cmd", "command to run")
-		cmd.Params.VariadicStringVar(&cmdArgs, "...", "comand arguments", 0)
+		cmd.Params.VariadicStringVar(&cmdArgs, "...", "command arguments", 0)
 
 		usage := func() {
 			DefaultUsage(cmd)()
 			// add commands to usage...
 			fmt.Fprintf(cmd.Output(), "\nCommands:\n")
-			for name, cmd := range subcommands {
-				fmt.Fprintf(cmd.Output(), "  %s\n\t%s\n", name, cmd.ShortDescription)
+			for name, subcmd := range subcommands {
+				fmt.Fprintf(cmd.Output(), "  %s\n\t%s\n", name, subcmd.ShortDescription)
 			}
 			fmt.Fprintf(cmd.Output(), "\n")
 		}
