@@ -46,7 +46,7 @@ func ExampleCommand() {
 
 func ExampleNewMenu() {
 	type operator = func(float64, float64) float64
-	type init_func = func(cmd *cli.Command) func()
+	type initFunc = func(cmd *cli.Command) func()
 
 	apply := func(init float64, op operator, args []float64) float64 {
 		res := init
@@ -55,7 +55,7 @@ func ExampleNewMenu() {
 		}
 		return res
 	}
-	init_cmd := func(init float64, op operator) init_func {
+	initCmd := func(init float64, op operator) initFunc {
 		return func(cmd *cli.Command) func() {
 			var args []float64
 			cmd.Params.VariadicFloatVar(&args, "args", "arg [args...]", 0)
@@ -68,11 +68,11 @@ func ExampleNewMenu() {
 	sum := cli.NewCommand(
 		"+", "adds floating point arguments",
 		"<long description of how addition works>",
-		init_cmd(0, func(x, y float64) float64 { return x + y }))
+		initCmd(0, func(x, y float64) float64 { return x + y }))
 	mult := cli.NewCommand(
 		"*", "multiplies floating point arguments",
 		"<long description of how multiplication works>",
-		init_cmd(1, func(x, y float64) float64 { return x * y }))
+		initCmd(1, func(x, y float64) float64 { return x * y }))
 
 	calc := cli.NewMenu("calc", "does calculations",
 		"<long description of how math works>",

@@ -11,7 +11,7 @@ Command line parsing for go.
 
 This package assumes that command line tools consists of a command, followed by flags, and then positional arguments:
 
-```
+```sh
 > cmd -x -foo=42 a b c
 ```
 
@@ -19,7 +19,7 @@ The flags, `-x` and `-foo` are optional but with default values, while some of t
 
 For many command line tools, there are also subcommands that looks like
 
-```
+```sh
 > cmd -x -foo=42 subcmd -y a b c
 ```
 
@@ -158,7 +158,7 @@ If you want to have sub-commands, you use the `NewMenu()` function. It creates a
 
 ```go
 type operator = func(float64, float64) float64
-type init_func = func(cmd *cli.Command) func()
+type initFunc = func(cmd *cli.Command) func()
 
 apply := func(init float64, op operator, args []float64) float64 {
 	res := init
@@ -167,7 +167,7 @@ apply := func(init float64, op operator, args []float64) float64 {
 	}
 	return res
 }
-init_cmd := func(init float64, op operator) init_func {
+initCmd := func(init float64, op operator) initFunc {
 	return func(cmd *cli.Command) func() {
 		var args []float64
 		cmd.Params.VariadicFloatVar(&args, "args", "arg [args...]", 0)
@@ -180,11 +180,11 @@ init_cmd := func(init float64, op operator) init_func {
 sum := cli.NewCommand(
 	"+", "adds floating point arguments",
 	"<long description of how addition works>",
-	init_cmd(0, func(x, y float64) float64 { return x + y }))
+	initCmd(0, func(x, y float64) float64 { return x + y }))
 mult := cli.NewCommand(
 	"*", "multiplies floating point arguments",
 	"<long description of how multiplication works>",
-	init_cmd(1, func(x, y float64) float64 { return x * y }))
+	initCmd(1, func(x, y float64) float64 { return x * y }))
 
 calc := cli.NewMenu("calc", "does calculations",
 	"<long description of how math works>",
@@ -193,7 +193,7 @@ calc := cli.NewMenu("calc", "does calculations",
 
 The first half of the example is just there because Go is a bit verbose when it comes to defining functions, and I want an apply function that generalises the two operators. I don't think Go has one, but if it does, please correct me. Anyway, I define an `apply` function that will do one operation over all floats in a slice, starting with some initial value. Then I write a function that creates a command initialisation callback by setting variadic arguments and then running `apply` with the `init` and `op` I give it. That has nothing to do with commands; I just didn't want a lot of replicated code like I had earlier.
 
-Then, and this is where it is relevant for the `cli` module, I create a `sum` and `mult` command (named `+` and `*`), with the `init_cmd` function doing the setup. And with `NewMenu()` I put these in a command called `calc`.
+Then, and this is where it is relevant for the `cli` module, I create a `sum` and `mult` command (named `+` and `*`), with the `initCmd` function doing the setup. And with `NewMenu()` I put these in a command called `calc`.
 
 A menu command takes a variable number of commands, the first of which must be the name of one of its subcommands (here `+` or `*`; it looks at the name we give the commands, not the variables). If you run `calc`, you specify which subcommand to via the first argument. This will call `sum`:
 
@@ -234,4 +234,3 @@ menu.Run([]string{"bar", "y"}) // will say menu/bar/y
 ```
 
 If the arguments get to an unknown command, the parsing will terminate with an error message, and the same happens if you end up at a menu command without a sub-command left to dispatch on.
-
