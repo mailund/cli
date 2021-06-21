@@ -91,10 +91,10 @@ func TestCommandCalled(t *testing.T) {
 
 func TestOption(t *testing.T) {
 	called := false
-	arg_x := -1
+	argX := -1
 	init := func(cmd *cli.Command) func() {
 		x := cmd.Flags.Int("x", 42, "an integer")
-		return func() { called = true; arg_x = *x }
+		return func() { called = true; argX = *x }
 	}
 	cmd := cli.NewCommand("foo", "does foo", "a really good foo", init)
 	cmd.Flags.Init("foo", flag.ContinueOnError) // so we don't terminate
@@ -117,7 +117,7 @@ func TestOption(t *testing.T) {
 	if !called {
 		t.Error("The command should be called now")
 	}
-	if arg_x != 42 {
+	if argX != 42 {
 		t.Error("The option wasn't set correctly")
 	}
 }
@@ -127,10 +127,10 @@ func TestParam(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	called := false
-	arg_x := -1
+	argX := -1
 	init := func(cmd *cli.Command) func() {
 		x := cmd.Params.Int("x", "an integer")
-		return func() { called = true; arg_x = *x }
+		return func() { called = true; argX = *x }
 	}
 	cmd := cli.NewCommand("foo", "does foo", "a really good foo", init)
 
@@ -157,32 +157,32 @@ func TestParam(t *testing.T) {
 	if !called {
 		t.Error("The command should be called now")
 	}
-	if arg_x != 42 {
+	if argX != 42 {
 		t.Error("The option wasn't set correctly")
 	}
 }
 
 func TestMenu(t *testing.T) {
-	x_called, y_called := false, false
+	xCalled, yCalled := false, false
 	init_func := func(b *bool) func(*cli.Command) func() {
 		return func(cmd *cli.Command) func() {
 			return func() { *b = true }
 		}
 	}
 	menu := cli.NewMenu("", "", "",
-		cli.NewCommand("x", "", "", init_func(&x_called)),
-		cli.NewCommand("y", "", "", init_func(&y_called)),
+		cli.NewCommand("x", "", "", init_func(&xCalled)),
+		cli.NewCommand("y", "", "", init_func(&yCalled)),
 	)
 
 	menu.Run([]string{"x"})
-	if !x_called {
+	if !xCalled {
 		t.Error("Command x wasn't called")
 	}
-	if y_called {
+	if yCalled {
 		t.Error("y was called too soon")
 	}
 	menu.Run([]string{"y"})
-	if !y_called {
+	if !yCalled {
 		t.Error("Command y wasn't called")
 	}
 

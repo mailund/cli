@@ -147,9 +147,9 @@ func NewMenu(name, short, long string, subcmds ...*Command) *Command {
 
 	init := func(cmd *Command) func() {
 		var command string
-		var cmd_args []string
+		var cmdArgs []string
 		cmd.Params.StringVar(&command, "cmd", "command to run")
-		cmd.Params.VariadicStringVar(&cmd_args, "...", "comand arguments", 0)
+		cmd.Params.VariadicStringVar(&cmdArgs, "...", "comand arguments", 0)
 
 		usage := func() {
 			DefaultUsage(cmd)()
@@ -164,7 +164,7 @@ func NewMenu(name, short, long string, subcmds ...*Command) *Command {
 
 		return func() {
 			if subcmd, ok := subcommands[command]; ok {
-				subcmd.Run(cmd_args)
+				subcmd.Run(cmdArgs)
 			} else {
 				fmt.Fprintf(cmd.Output(),
 					"'%s' is not a valid command for %s.\n\n", command, name)

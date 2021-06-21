@@ -40,7 +40,7 @@ type param struct {
 	parser func(string) error
 }
 
-type variadic_param struct {
+type variadicParam struct {
 	name   string
 	desc   string
 	min    int
@@ -64,7 +64,7 @@ type ParamSet struct {
 	out    io.Writer
 
 	// last parameter, used for variadic arguments
-	last *variadic_param
+	last *variadicParam
 }
 
 // SetOuput specifies where usage output and error messages should
@@ -129,12 +129,11 @@ func (p *ParamSet) ShortUsage() string {
 	for i, param := range p.params {
 		names[i] = param.name
 	}
-	names_usage := strings.Join(names, " ")
-	if p.last == nil {
-		return names_usage
-	} else {
-		return names_usage + " " + p.last.name
+	namesUsage := strings.Join(names, " ")
+	if p.last != nil {
+		namesUsage += " " + p.last.name
 	}
+	return namesUsage
 }
 
 // Parse parses arguments against parameters.
@@ -148,11 +147,11 @@ func (p *ParamSet) ShortUsage() string {
 // it will return an error instead. If all goes well, it will
 // return nil.
 func (p *ParamSet) Parse(args []string) error {
-	min_params := len(p.params)
+	minParams := len(p.params)
 	if p.last != nil {
-		min_params += p.last.min
+		minParams += p.last.min
 	}
-	if len(args) < min_params {
+	if len(args) < minParams {
 		switch p.ErrorFlag {
 		case ExitOnError:
 			fmt.Fprintf(p.out,
@@ -506,7 +505,7 @@ func (p *ParamSet) VariadicInt(name, desc string, min int) *[]int {
 	return &x
 }
 
-// VariadicIntVar install a variadic float argument
+// VariadicFloatVar install a variadic float argument
 // as the last parameter(s) for the parameter set.
 //
 // Parameters:
@@ -519,7 +518,7 @@ func (p *ParamSet) VariadicFloatVar(target *[]float64, name, desc string, min in
 	p.VariadicFunc(name, desc, min, variadicFloatParser(target))
 }
 
-// VariadicInt install a variadic float argument
+// VariadicFloat install a variadic float argument
 // as the last parameter(s) for the parameter set. It returns a pointer
 // to where the parsed values will go if parsing is successfull.
 //
@@ -546,5 +545,5 @@ func (p *ParamSet) VariadicFloat(name, desc string, min int) *[]float64 {
 //   - fn: Callback function invoked on the last arguments. If parsing is
 //     successfull it should return nil, otherwise a non-nil error.
 func (p *ParamSet) VariadicFunc(name, desc string, min int, fn func([]string) error) {
-	p.last = &variadic_param{name: name, desc: desc, min: min, parser: fn}
+	p.last = &variadicParam{name: name, desc: desc, min: min, parser: fn}
 }
