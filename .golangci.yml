@@ -24,6 +24,10 @@ linters-settings:
   testpackage:
     skip-regexp: internal_test\.go
 
+  exhaustive:
+    check-generated: false
+    default-signifies-exhaustive: true
+
 linters:
   disable-all: true
   enable:

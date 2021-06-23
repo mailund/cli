@@ -35,16 +35,16 @@ const (
 	PanicOnError = flag.PanicOnError
 )
 
-type param struct {
-	name   string
-	desc   string
+type Param struct {
+	Name   string
+	Desc   string
 	parser func(string) error
 }
 
-type variadicParam struct {
-	name   string
-	desc   string
-	min    int
+type VariadicParam struct {
+	Name   string
+	Desc   string
+	Min    int
 	parser func([]string) error
 }
 
@@ -61,11 +61,11 @@ type ParamSet struct {
 	// ErrorFlag Controls how we deal with parsing errors
 	ErrorFlag ErrorHandling
 
-	params []*param
+	params []*Param
 	out    io.Writer
 
 	// last parameter, used for variadic arguments
-	last *variadicParam
+	last *VariadicParam
 }
 
 // SetOutput specifies where usage output and error messages should
@@ -88,11 +88,11 @@ func (p *ParamSet) PrintDefaults() {
 	fmt.Fprintf(p.Output(), "Arguments:\n")
 
 	for _, par := range p.params {
-		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", par.name, par.desc)
+		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", par.Name, par.Desc)
 	}
 
 	if p.last != nil {
-		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", p.last.name, p.last.desc)
+		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", p.last.Name, p.last.Desc)
 	}
 }
 
@@ -109,6 +109,16 @@ func (p *ParamSet) NParams() int {
 	return n
 }
 
+// Param returns the parameter at position i.
+func (p *ParamSet) Param(i int) *Param {
+	return p.params[i]
+}
+
+// Variadic returns the last variadic parameter, if there is one.
+func (p *ParamSet) Variadic() *VariadicParam {
+	return p.last
+}
+
 // NewParamSet creates a new parameter set.
 //
 // Parameters:
@@ -121,7 +131,7 @@ func NewParamSet(name string, errflag ErrorHandling) *ParamSet {
 	argset := &ParamSet{
 		Name:      name,
 		ErrorFlag: errflag,
-		params:    []*param{},
+		params:    []*Param{},
 		out:       os.Stderr}
 	argset.Usage = argset.PrintDefaults
 
@@ -133,13 +143,13 @@ func NewParamSet(name string, errflag ErrorHandling) *ParamSet {
 func (p *ParamSet) ShortUsage() string {
 	names := make([]string, len(p.params))
 	for i, param := range p.params {
-		names[i] = param.name
+		names[i] = param.Name
 	}
 
 	namesUsage := strings.Join(names, " ")
 
 	if p.last != nil {
-		namesUsage += " " + p.last.name
+		namesUsage += " " + p.last.Name
 	}
 
 	return namesUsage
@@ -158,7 +168,7 @@ func (p *ParamSet) ShortUsage() string {
 func (p *ParamSet) Parse(args []string) error {
 	minParams := len(p.params)
 	if p.last != nil {
-		minParams += p.last.min
+		minParams += p.last.Min
 	}
 
 	if len(args) < minParams {
@@ -189,11 +199,11 @@ func (p *ParamSet) Parse(args []string) error {
 		if err := par.parser(args[i]); err != nil {
 			if p.ErrorFlag == flag.ExitOnError {
 				fmt.Fprintf(p.Output(), "Error parsing parameter %s='%s', %s.\n",
-					par.name, args[i], err.Error())
+					par.Name, args[i], err.Error())
 				failure.Failure()
 			}
 
-			return ParseErrorf("error parsing parameter %s='%s'", par.name, args[i])
+			return ParseErrorf("error parsing parameter %s='%s'", par.Name, args[i])
 		}
 	}
 
@@ -202,11 +212,11 @@ func (p *ParamSet) Parse(args []string) error {
 		if err := p.last.parser(rest); err != nil {
 			if p.ErrorFlag == ExitOnError {
 				fmt.Fprintf(p.Output(), "Error parsing parameters %s='%v', %s.\n",
-					p.last.name, rest, err.Error())
+					p.last.Name, rest, err.Error())
 				failure.Failure()
 			}
 
-			return ParseErrorf("error parsing parameters %s='%v'", p.last.name, rest)
+			return ParseErrorf("error parsing parameters %s='%v'", p.last.Name, rest)
 		}
 	}
 
@@ -382,7 +392,7 @@ func (p *ParamSet) Float(name, desc string) *float64 {
 //   - desc: Description of the argument. Used when printing usage.
 //   - fn: Callback function, invoked when the arguments are parsed.
 func (p *ParamSet) Func(name, desc string, fn func(string) error) {
-	p.params = append(p.params, &param{name, desc, fn})
+	p.params = append(p.params, &Param{name, desc, fn})
 }
 
 func variadicStringParser(target *[]string) func([]string) error {
@@ -581,5 +591,5 @@ func (p *ParamSet) VariadicFloat(name, desc string, min int) *[]float64 {
 //   - fn: Callback function invoked on the last arguments. If parsing is
 //     succesfull it should return nil, otherwise a non-nil error.
 func (p *ParamSet) VariadicFunc(name, desc string, min int, fn func([]string) error) {
-	p.last = &variadicParam{name: name, desc: desc, min: min, parser: fn}
+	p.last = &VariadicParam{Name: name, Desc: desc, Min: min, parser: fn}
 }
