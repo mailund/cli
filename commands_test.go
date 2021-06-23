@@ -16,17 +16,20 @@ func TestNewCommand(t *testing.T) {
 		func(cmd *cli.Command) func() { return func() {} })
 }
 
-func TestNewCommandUsage(t *testing.T) {
+func TestNewCommandUsage(t *testing.T) { //nolint:funlen // A test function can have as many statements as it likes
 	init := func(cmd *cli.Command) func() {
 		cmd.Flags.Bool("foo", false, "set foo")
 		cmd.Params.String("bar", "a bar")
+
 		return func() {}
 	}
+
 	cmd := cli.NewCommand("name", "short", "long", init)
 
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
 	cmd.Usage()
+
 	msg := builder.String()
 	expected := `Usage: name [options] bar
         
@@ -47,6 +50,7 @@ Arguments:
 	space := regexp.MustCompile(`\s+`)
 	msg = space.ReplaceAllString(msg, " ")
 	expected = space.ReplaceAllString(expected, " ")
+
 	if msg != expected {
 		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
 	}
@@ -56,6 +60,7 @@ Arguments:
 	builder = new(strings.Builder)
 	cmd.SetOutput(builder)
 	cmd.Usage()
+
 	msg = builder.String()
 	expected = `Usage: name [options] bar
         
@@ -75,6 +80,7 @@ Arguments:
 `
 	msg = space.ReplaceAllString(msg, " ")
 	expected = space.ReplaceAllString(expected, " ")
+
 	if msg != expected {
 		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
 	}
@@ -85,6 +91,7 @@ func TestCommandCalled(t *testing.T) {
 	init := func(cmd *cli.Command) func() { return func() { called = true } }
 	cmd := cli.NewCommand("", "", "", init)
 	cmd.Run([]string{})
+
 	if !called {
 		t.Fatal("Command x wasn't called")
 	}
@@ -106,18 +113,21 @@ func TestOption(t *testing.T) {
 	cmd.SetOutput(builder)
 
 	cmd.Run([]string{"-x", "foo"}) // wrong type for int
+
 	if called {
 		t.Error("The command shouldn't be called")
 	}
-	errmsg := builder.String()
-	if !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: parse error`) {
+
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: parse error`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 
 	cmd.Run([]string{"-x", "42"}) // correct type for int
+
 	if !called {
 		t.Error("The command should be called now")
 	}
+
 	if argX != 42 {
 		t.Error("The option wasn't set correctly")
 	}
@@ -139,55 +149,67 @@ func TestParam(t *testing.T) {
 	cmd.SetOutput(builder)
 
 	cmd.Run([]string{"foo"}) // wrong type for int
+
 	if !failed {
 		t.Error("The command should have failed")
 	}
+
 	if called {
 		t.Error("The command shouldn't be called")
 	}
-	errmsg := builder.String()
-	if !strings.HasPrefix(errmsg, `Error parsing parameter x='foo'`) {
+
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `Error parsing parameter x='foo'`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
+
 	failed = false
 
 	cmd.Run([]string{"42"}) // correct type for int
+
 	if failed {
 		t.Error("Didn't expect a failure this time")
 	}
+
 	if !called {
 		t.Error("The command should be called now")
 	}
+
 	if argX != 42 {
 		t.Error("The option wasn't set correctly")
 	}
 }
 
-func makeMenu() (*bool, *bool, *cli.Command) {
-	xCalled, yCalled := false, false
+func makeMenu() (xCalled, yCalled *bool, cmd *cli.Command) {
+	xCalled, yCalled = new(bool), new(bool)
+
 	initFunc := func(b *bool) func(*cli.Command) func() {
 		return func(cmd *cli.Command) func() {
 			return func() { *b = true }
 		}
 	}
-	menu := cli.NewMenu("menu", "", "Dispatch to subcommands",
-		cli.NewCommand("x", "do x", "", initFunc(&xCalled)),
-		cli.NewCommand("y", "do y", "", initFunc(&yCalled)),
+	cmd = cli.NewMenu("menu", "", "Dispatch to subcommands",
+		cli.NewCommand("x", "do x", "", initFunc(xCalled)),
+		cli.NewCommand("y", "do y", "", initFunc(yCalled)),
 	)
-	return &xCalled, &yCalled, menu
+
+	return xCalled, yCalled, cmd
 }
 
 func TestMenu(t *testing.T) {
 	xCalled, yCalled, menu := makeMenu()
 
 	menu.Run([]string{"x"})
+
 	if !*xCalled {
 		t.Error("Command x wasn't called")
 	}
+
 	if *yCalled {
 		t.Error("y was called too soon")
 	}
+
 	menu.Run([]string{"y"})
+
 	if !*yCalled {
 		t.Error("Command y wasn't called")
 	}
@@ -199,16 +221,19 @@ func TestMenuUsage(t *testing.T) {
 	builder := new(strings.Builder)
 	menu.SetOutput(builder)
 	cli.DefaultUsage(menu)
-	defaultUsage := builder.String()
 
+	defaultUsage := builder.String()
 	builder = new(strings.Builder)
+
 	menu.SetOutput(builder)
 	menu.Usage()
-	menuUsage := builder.String()
+
+	var menuUsage = builder.String()
 
 	if !strings.HasPrefix(menuUsage, defaultUsage) {
 		t.Error("Expected menu usage to start with default usage")
 	}
+
 	if !strings.HasSuffix(menuUsage, "Commands:\n  x\n\tdo x\n  y\n\tdo y\n\n") {
 		t.Error("Expected commands at the end of menu usage")
 		fmt.Println("The usage output was:")
@@ -224,12 +249,12 @@ func TestMenuFailure(t *testing.T) {
 	builder := new(strings.Builder)
 	menu.SetOutput(builder)
 	menu.Run([]string{"z"})
-	errmsg := builder.String()
 
 	if !failed {
 		t.Error("Expected command to fail")
 	}
-	if !strings.HasPrefix(errmsg, "'z' is not a valid command for menu.") {
+
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "'z' is not a valid command for menu.") {
 		t.Errorf("Expected different error message than %s\n", errmsg)
 	}
 }

@@ -23,13 +23,14 @@ func ExampleParamSet() {
 
 	// When we parse the parameter set, i, b, f, and s will
 	// get the parameters from the list of arguments.
-	p.Parse([]string{"42", "t", "3.14", "foo"})
+	_ = p.Parse([]string{"42", "t", "3.14", "foo"})
+
 	fmt.Printf("I=%d, B=%t, F=%f, S='%s'\n", i, b, *f, *s)
 
 	// Output: I=42, B=true, F=3.140000, S='foo'
 }
 
-func ExampleParamSet_second() {
+func ExampleParamSet_second() { //nolint:funlen // Example functions can be long as well... (for now)
 	p := params.NewParamSet("sum", params.ExitOnError)
 
 	// Variables we want to parse
@@ -37,42 +38,53 @@ func ExampleParamSet_second() {
 		op   string
 		args []float64
 	)
+
 	p.StringVar(&op, "op", "operation to perform")
 	p.VariadicFloatVar(&args, "args", "arg [args...]", 0)
 
-	p.Parse([]string{"+", "0.42", "3.14", "0.3"})
+	_ = p.Parse([]string{"+", "0.42", "3.14", "0.3"})
+
 	switch op {
 	case "+":
 		res := 0.0
 		for _, x := range args {
 			res += x
 		}
+
 		fmt.Printf("Result: %f\n", res)
+
 	case "*":
 		res := 1.0
 		for _, x := range args {
 			res *= x
 		}
+
 		fmt.Printf("Result: %f\n", res)
+
 	default:
 		fmt.Fprintf(os.Stderr, "I didn't implement any more ops!\n")
 		os.Exit(2)
 	}
 
-	p.Parse([]string{"*", "0.42", "3.14", "0.3"})
+	_ = p.Parse([]string{"*", "0.42", "3.14", "0.3"})
+
 	switch op {
 	case "+":
 		res := 0.0
 		for _, x := range args {
 			res += x
 		}
+
 		fmt.Printf("Result: %f\n", res)
+
 	case "*":
 		res := 1.0
 		for _, x := range args {
 			res *= x
 		}
+
 		fmt.Printf("Result: %f\n", res)
+
 	default:
 		fmt.Fprintf(os.Stderr, "I didn't implement any more ops!\n")
 		os.Exit(2)

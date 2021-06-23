@@ -4,18 +4,18 @@ import "testing"
 
 func TestWrapSimplifySpace(t *testing.T) {
 	x := "  foo\nbar\t\n\t\tbaz\t"
-	expected := "foo bar baz"
-	wrapped := wordWrap(x, 70)
-	if wrapped != expected {
+
+	const linewidth = 70
+
+	if wrapped, expected := wordWrap(x, linewidth), "foo bar baz"; wrapped != expected {
 		t.Errorf(`Expected "%s" but got "%s"`, expected, wrapped)
 	}
 }
 
 func TestWrapNewlines(t *testing.T) {
 	x := "  foo\nbar\t\n\t\tbaz\t"
-	expected := "foo bar\nbaz"
-	wrapped := wordWrap(x, 8)
-	if wrapped != expected {
+
+	if wrapped, expected := wordWrap(x, 8), "foo bar\nbaz"; wrapped != expected {
 		t.Errorf(`Expected "%s" but got "%s"`, expected, wrapped)
 	}
 }

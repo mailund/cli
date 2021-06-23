@@ -54,7 +54,7 @@ func (cmd *Command) SetUsage(usage func()) {
 //
 // Parsing errors for either flags or parameters will terminate the program
 // with os.Exit(0) for -help options and os.Exit(2) otherwise. If the parsing
-// is successfull, the underlying run callback is executed.
+// is succesfull, the underlying run callback is executed.
 func (cmd *Command) Run(args []string) {
 	// Outside of testing, we never get the errors, so we don't
 	// propagate them. For testing, it is good to disable the exit
@@ -63,9 +63,11 @@ func (cmd *Command) Run(args []string) {
 	if err := cmd.Flags.Parse(args); err != nil {
 		return
 	}
+
 	if err := cmd.Params.Parse(cmd.Flags.Args()); err != nil {
 		return
 	}
+
 	cmd.run()
 }
 
@@ -93,7 +95,8 @@ func NewCommand(name, short, long string, init func(*Command) func()) *Command {
 		Params:           params.NewParamSet(name, params.ExitOnError),
 		out:              os.Stdout}
 
-	cmd.LongDescription = wordWrap(long, 70)
+	const linewidth = 70
+	cmd.LongDescription = wordWrap(long, linewidth)
 
 	// There is always a help command when we parse, but the usage won't
 	// show it unless we make it explicit
@@ -147,7 +150,9 @@ func NewMenu(name, short, long string, subcmds ...*Command) *Command {
 
 	init := func(cmd *Command) func() {
 		var command string
+
 		var cmdArgs []string
+
 		cmd.Params.StringVar(&command, "cmd", "command to run")
 		cmd.Params.VariadicStringVar(&cmdArgs, "...", "command arguments", 0)
 
@@ -155,11 +160,14 @@ func NewMenu(name, short, long string, subcmds ...*Command) *Command {
 			DefaultUsage(cmd)()
 			// add commands to usage...
 			fmt.Fprintf(cmd.Output(), "\nCommands:\n")
+
 			for name, subcmd := range subcommands {
 				fmt.Fprintf(cmd.Output(), "  %s\n\t%s\n", name, subcmd.ShortDescription)
 			}
+
 			fmt.Fprintf(cmd.Output(), "\n")
 		}
+
 		cmd.SetUsage(usage)
 
 		return func() {

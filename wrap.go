@@ -7,8 +7,10 @@ func wordWrap(x string, linewidth int) string {
 	if len(words) == 0 {
 		return "" // apparently, there are no words
 	}
+
 	wrapped := words[0]
 	used := len(wrapped)
+
 	for _, word := range words[1:] {
 		if used+1+len(word) > linewidth {
 			wrapped += "\n" + word
@@ -18,5 +20,6 @@ func wordWrap(x string, linewidth int) string {
 			used += 1 + len(word)
 		}
 	}
+
 	return wrapped
 }

@@ -46,6 +46,7 @@ func ExampleCommand() {
 
 func ExampleNewMenu() {
 	type operator = func(float64, float64) float64
+
 	type initFunc = func(cmd *cli.Command) func()
 
 	apply := func(init float64, op operator, args []float64) float64 {
@@ -53,12 +54,16 @@ func ExampleNewMenu() {
 		for _, x := range args {
 			res = op(res, x)
 		}
+
 		return res
 	}
+
 	initCmd := func(init float64, op operator) initFunc {
 		return func(cmd *cli.Command) func() {
 			var args []float64
+
 			cmd.Params.VariadicFloatVar(&args, "args", "arg [args...]", 0)
+
 			return func() {
 				fmt.Printf("Result: %f\n", apply(init, op, args))
 			}
