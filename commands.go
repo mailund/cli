@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 
 	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/params"
@@ -161,8 +162,15 @@ func NewMenu(name, short, long string, subcmds ...*Command) *Command {
 			// add commands to usage...
 			fmt.Fprintf(cmd.Output(), "\nCommands:\n")
 
-			for name, subcmd := range subcommands {
-				fmt.Fprintf(cmd.Output(), "  %s\n\t%s\n", name, subcmd.ShortDescription)
+			subcmdNames := []string{}
+			for name := range subcommands {
+				subcmdNames = append(subcmdNames, name)
+			}
+
+			sort.Strings(subcmdNames)
+
+			for _, name := range subcmdNames {
+				fmt.Fprintf(cmd.Output(), "  %s\n\t%s\n", name, subcommands[name].ShortDescription)
 			}
 
 			fmt.Fprintf(cmd.Output(), "\n")
