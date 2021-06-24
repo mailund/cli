@@ -38,8 +38,10 @@ func checkFlags(t *testing.T, f *flag.FlagSet, argv interface{}) {
 			t.Errorf("Expected flag %s to have usage %s but it has %s\n", name, tfield.Tag.Get("descr"), fl.Usage)
 		}
 
-		if expdef := fmt.Sprintf("%v", vfield); fl.DefValue != expdef {
-			t.Errorf("Expected flag %s to have default value %s but it has %s\n", name, expdef, fl.DefValue)
+		if tfield.Type.Kind() != reflect.Func { // Callbacks do not have a "default"
+			if expdef := fmt.Sprintf("%v", vfield); fl.DefValue != expdef {
+				t.Errorf("Expected flag %s to have default value %s but it has %s\n", name, expdef, fl.DefValue)
+			}
 		}
 	}
 }
@@ -113,6 +115,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		name string
 		args args
 		err  error
+		hook func(*testing.T, args)
 	}{
 		{
 			name: "No flags or arguments",
@@ -208,10 +211,10 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					B func(x, y int) int `arg:"b"`
+					B complex128 `arg:"b"`
 				}),
 			},
-			err: SpecErrorf(`unsupported type for parameter b: "func"`),
+			err: SpecErrorf(`unsupported type for parameter b: "complex128"`),
 		},
 
 		{
@@ -277,11 +280,140 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 			},
 			err: SpecErrorf(`unsupported slice type for parameter b: "func"`),
 		},
+		{
+			name: "More than one variadic",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A []int `arg:"a"`
+					B []int `arg:"b"`
+				}),
+			},
+			err: SpecErrorf("a command spec cannot contain more than one variadic parameter"),
+		},
+
+		{
+			name: "Flag callback nil",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A func(string) error `flag:"a"`
+				}),
+			},
+			err: SpecErrorf("callbacks cannot be nil"),
+		},
+		{
+			name: "Flag callback wrong signature 1",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A func(int) error `flag:"a"`
+				}),
+			},
+			err: SpecErrorf("callbacks must have signature func(string) error"),
+		},
+		{
+			name: "Flag callback wrong signature 2",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A func(string) `flag:"a"`
+				}),
+			},
+			err: SpecErrorf("callbacks must have signature func(string) error"),
+		},
+		{
+			name: "Flag callbacks non-nil",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				func() interface{} {
+					var f = func(x string) error { return nil }
+					var x = struct {
+						A func(string) error `flag:"a"`
+					}{A: f}
+					return &x
+				}(),
+			},
+			hook: func(t *testing.T, a args) {
+				t.Helper()
+
+				funcA := reflect.ValueOf(a).FieldByName("A")
+				funcB := reflect.ValueOf(a).FieldByName("B")
+				if funcA != funcB {
+					t.Errorf("The callback function is no longer its default")
+				}
+			},
+		},
+
+		{
+			name: "Param callback nil",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A func(string) error `arg:"a"`
+				}),
+			},
+			err: SpecErrorf("callbacks cannot be nil"),
+		},
+		{
+			name: "Params callback wrong signature 1",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A func(int) error `arg:"a"`
+				}),
+			},
+			err: SpecErrorf("callbacks must have signature func(string) error"),
+		},
+		{
+			name: "Params callback wrong signature 2",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					A func(string) `arg:"a"`
+				}),
+			},
+			err: SpecErrorf("callbacks must have signature func(string) error"),
+		},
+		{
+			name: "Param callbacks non-nil",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				func() interface{} {
+					var f = func(x string) error { return nil }
+					var x = struct {
+						A func(string) error `arg:"a"`
+					}{A: f}
+					return &x
+				}(),
+			},
+			hook: func(t *testing.T, a args) {
+				t.Helper()
+
+				funcA := reflect.ValueOf(a).FieldByName("A")
+				funcB := reflect.ValueOf(a).FieldByName("B")
+				if funcA != funcB {
+					t.Errorf("The callback function is no longer its default")
+				}
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := prepareSpecs(tt.args.f, tt.args.p, tt.args.argv); err != nil {
+				if tt.err == nil {
+					t.Fatalf("Got an error, but did not expect one")
+				}
 				// FIXME: This is a bit vulnerable. I'm checking the string in the errors. I should
 				// add parameters to the error type so I could check without expecting error messages
 				// never to change.
@@ -294,6 +426,9 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					t.Fatalf("Expected error %s here, but got nothing", tt.err.Error())
 				}
 				checkFlagsParams(t, tt.args.f, tt.args.p, tt.args.argv)
+				if tt.hook != nil {
+					tt.hook(t, tt.args)
+				}
 			}
 		})
 	}
