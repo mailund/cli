@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"reflect"
+	"strconv"
 	"testing"
 
 	"github.com/mailund/cli/params"
@@ -60,19 +61,37 @@ func checkParams(t *testing.T, p *params.ParamSet, argv interface{}) {
 			continue
 		}
 
-		if paramsSeen > p.NParams() {
-			t.Fatal("We have now seen more parameters in the spec than in the set")
-		}
+		if tfield.Type.Kind() == reflect.Slice {
+			// variadic
+			param := p.Variadic()
+			if param.Name != name {
+				t.Errorf("Expected the parameter's name to be %s but it is %s", name, param.Name)
+			}
 
-		param := p.Param(paramsSeen)
-		paramsSeen++
+			if param.Desc != tfield.Tag.Get("descr") {
+				t.Errorf("Expected parameter %s's usage to be %s but it is %s", name, tfield.Tag.Get("descr"), param.Desc)
+			}
 
-		if param.Name != name {
-			t.Errorf("Expected the parameter's name to be %s but it is %s", name, param.Name)
-		}
+			// If we are here, there couldn't have been a parsing error on min
+			if min, _ := strconv.Atoi(tfield.Tag.Get("min")); param.Min != min {
+				t.Errorf("Unexpected min on variadic variable, got %d but expected %d", param.Min, min)
+			}
+		} else {
+			// non-variadic
+			if paramsSeen > p.NParams() {
+				t.Fatal("We have now seen more parameters in the spec than in the set")
+			}
 
-		if param.Desc != tfield.Tag.Get("descr") {
-			t.Errorf("Expected parameter %s's usage to be %s but it is %s", name, tfield.Tag.Get("descr"), param.Desc)
+			param := p.Param(paramsSeen)
+			paramsSeen++
+
+			if param.Name != name {
+				t.Errorf("Expected the parameter's name to be %s but it is %s", name, param.Name)
+			}
+
+			if param.Desc != tfield.Tag.Get("descr") {
+				t.Errorf("Expected parameter %s's usage to be %s but it is %s", name, tfield.Tag.Get("descr"), param.Desc)
+			}
 		}
 	}
 }
@@ -93,6 +112,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 	tests := []struct {
 		name string
 		args args
+		err  error
 	}{
 		{
 			name: "No flags or arguments",
@@ -170,12 +190,111 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 			},
 		},
+
+		{
+			name: "Unsupported flag type",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					B []bool `flag:"b"`
+				}),
+			},
+			err: SpecErrorf(`unsupported type for flag b: "slice"`),
+		},
+		{
+			name: "Unsupported parameter type",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					B func(x, y int) int `arg:"b"`
+				}),
+			},
+			err: SpecErrorf(`unsupported type for parameter b: "func"`),
+		},
+
+		{
+			name: "Variadic bool",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					X []bool `arg:"x"`
+				}),
+			},
+		},
+		{
+			name: "Variadic int",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					X []int `arg:"x" min:"2"`
+				}),
+			},
+		},
+		{
+			name: "Variadic float",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					X []float64 `arg:"x"`
+				}),
+			},
+		},
+		{
+			name: "Variadic string",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					X []string `arg:"x" descr:"foo"`
+				}),
+			},
+		},
+		{
+			name: "Variadic with invalid min",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					X []string `arg:"x" descr:"foo" min:"not an int"`
+				}),
+			},
+			err: SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
+		},
+
+		{
+			name: "Unsupported variadic parameter type",
+			args: args{
+				flag.NewFlagSet("test", flag.ExitOnError),
+				params.NewParamSet("test", flag.ExitOnError),
+				new(struct {
+					B []func(x, y int) int `arg:"b"`
+				}),
+			},
+			err: SpecErrorf(`unsupported slice type for parameter b: "func"`),
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prepareSpecs(tt.args.f, tt.args.p, tt.args.argv)
-			checkFlagsParams(t, tt.args.f, tt.args.p, tt.args.argv)
+			if err := prepareSpecs(tt.args.f, tt.args.p, tt.args.argv); err != nil {
+				// FIXME: This is a bit vulnerable. I'm checking the string in the errors. I should
+				// add parameters to the error type so I could check without expecting error messages
+				// never to change.
+				if err.Error() != tt.err.Error() {
+					t.Fatalf("Unexpected error, expected %s but got %s", tt.err.Error(), err.Error())
+				}
+			} else {
+				// No preparation error
+				if tt.err != nil {
+					t.Fatalf("Expected error %s here, but got nothing", tt.err.Error())
+				}
+				checkFlagsParams(t, tt.args.f, tt.args.p, tt.args.argv)
+			}
 		})
 	}
 }

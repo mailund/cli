@@ -81,7 +81,7 @@ func (p *ParamSet) Output() io.Writer { return p.out }
 
 // PrintDefaults prints a description of the parameters
 func (p *ParamSet) PrintDefaults() {
-	if p.NParams() == 0 {
+	if p.NParams() == 0 && p.last == nil {
 		return // nothing to print...
 	}
 
@@ -96,17 +96,11 @@ func (p *ParamSet) PrintDefaults() {
 	}
 }
 
-// NParams returns the number of parameters in the set. If the last of these
-// is variadic, this doesn't match the number of parameters that the set can parse,
-// since variadic parameters takes a variable number of arguments starting at some
-// minimum. The number is simply how many parsers were installed.
+// NParams returns the number of parameters in the set, excluding the last variadic
+// parameter if there is one. You can test for whether there is a variadic argument using
+// p.Variadic() != nil.
 func (p *ParamSet) NParams() int {
-	n := len(p.params)
-	if p.last != nil {
-		n++
-	}
-
-	return n
+	return len(p.params)
 }
 
 // Param returns the parameter at position i.
