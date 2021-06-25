@@ -35,11 +35,11 @@ A command, that does absolutely nothing, but that you can run, could look like t
 
 ```go
 cmd := cli.NewCommand(
-	cli.CommandSpec{
-		Name:  "first",
-		Short: "my first command",
-		Long:  "The first command I ever made",
-	})
+  cli.CommandSpec{
+    Name:  "first",
+    Short: "my first command",
+    Long:  "The first command I ever made",
+  })
 ```
 
 If you want to run it, you call its `Run()` method with a slice of strings:
@@ -54,13 +54,13 @@ If you want a command to do something when you call it, you must provide an `Act
 
 ```go
 cmd := cli.NewCommand(
-		cli.CommandSpec{
-			Name:   "hello",
-			Short:  "prints hello world",
-			Action: func(_ interface{}) {
-				fmt.Println("hello, world!")
-			},
-		})
+  cli.CommandSpec{
+    Name:   "hello",
+    Short:  "prints hello world",
+    Action: func(_ interface{}) {
+      fmt.Println("hello, world!")
+    },
+  })
 ```
 
 If you run this command, `cmd.Run([]string{})`, it will print “hello, world!”.
@@ -71,8 +71,8 @@ Let’s say we want a command that adds two numbers. For that, we need to argume
 
 ```go
 type AddArgs struct {
-	X int `pos:"x" descr:"first addition argument"`
-	Y int `pos:"y" descr:"first addition argument"`
+  X int `pos:"x" descr:"first addition argument"`
+  Y int `pos:"y" descr:"first addition argument"`
 }
 ```
 
@@ -84,19 +84,19 @@ We could set up our command for adding two numbers like this:
 
 ```go
 add := cli.NewCommand(
-	cli.CommandSpec{
-		Name:  "add",
-		Short: "adds two floating point arguments",
-		Long:  "<long description of how addition works>",
-		Init:  func() interface{} { return new(AddArgs) },
-		Action: func(args interface{}) {
-			// Get the argumens through casting the args
-			argv, _ := args.(*AddArgs)
+  cli.CommandSpec{
+    Name:  "add",
+    Short: "adds two floating point arguments",
+    Long:  "<long description of how addition works>",
+    Init:  func() interface{} { return new(AddArgs) },
+    Action: func(args interface{}) {
+      // Get the argumens through casting the args
+      argv, _ := args.(*AddArgs)
 
-			// Then we can do our calculations with the arguments
-			fmt.Printf("Result: %d\n", argv.X+argv.Y)
-		},
-	})
+      // Then we can do our calculations with the arguments
+      fmt.Printf("Result: %d\n", argv.X+argv.Y)
+    },
+  })
 ```
 
 The function we provide to `Init` returns a pointer to a new `AddArgs`, and when `Action` is called, it can cast the `interface{}` argument to `*AddArgs` and get the positional values. If you run it with `add.Run([]string{"2", "2"})` it will print `Result: 4` as expected.
@@ -105,28 +105,28 @@ Here’s a variation that adds a flag as well:
 
 ```go
 type NumArgs struct {
-	Round bool      `flag:"round" descr:"should result be rounded to nearest integer"`
-	Args  []float64 `pos:"args" descr:"numerical arguments to command"`
+  Round bool      `flag:"round" descr:"should result be rounded to nearest integer"`
+  Args  []float64 `pos:"args" descr:"numerical arguments to command"`
 }
 
 cmd := cli.NewCommand(
-	cli.CommandSpec{
-		Name:  "sum",
-		Short: "adds floating point arguments",
-		Long:  "<long description of how addition works>",
-		Init:  func() interface{} { return new(NumArgs) },
-		Action: func(args interface{}) {
-			argv, _ := args.(*NumArgs)
-			res := 0.0
-			for _, x := range argv.Args {
-				res += x
-			}
-			if argv.Round {
-				res = math.Round(res)
-			}
-			fmt.Printf("Result: %f\n", res)
-		},
-	})
+  cli.CommandSpec{
+    Name:  "sum",
+    Short: "adds floating point arguments",
+    Long:  "<long description of how addition works>",
+    Init:  func() interface{} { return new(NumArgs) },
+    Action: func(args interface{}) {
+      argv, _ := args.(*NumArgs)
+      res := 0.0
+      for _, x := range argv.Args {
+        res += x
+      }
+      if argv.Round {
+        res = math.Round(res)
+      }
+      fmt.Printf("Result: %f\n", res)
+    },
+  })
 ```
 
 The type `NumArgs` has both a `flag:` and `pos:` tag, creating a boolean flag determining whether we should round the result of the calculations and a variadic (multiple argument) positional variable of type `[]float64`, which means that the command will be able to take any number of float arguments.
@@ -141,17 +141,17 @@ This is how we could make the `-round` flag default to `true`:
 
 ```go
 cmd := cli.NewCommand(
-	cli.CommandSpec{
-		// The other arguments are the same as before…
-		Init: func() interface{} {
-			argv := new(NumArgs)
-			argv.Round = true
-			return argv
-		},
-		Action: func(args interface{}) {
-			// the Action function is the same as before
-		},
-	})
+  cli.CommandSpec{
+    // The other arguments are the same as before…
+    Init: func() interface{} {
+      argv := new(NumArgs)
+      argv.Round = true
+      return argv
+    },
+    Action: func(args interface{}) {
+      // the Action function is the same as before
+    },
+  })
 ```
 
 Simply setting `argv.Round = true` before we return from `Init` will make `true` the default value for the flag.
@@ -160,39 +160,39 @@ You can nest commands to make subcommands. Say we want a tool that can do both a
 
 ```go
 type CalcArgs struct {
-	X int `pos:"x" descr:"first addition argument"`
-	Y int `pos:"y" descr:"first addition argument"`
+  X int `pos:"x" descr:"first addition argument"`
+  Y int `pos:"y" descr:"first addition argument"`
 }
 
 add := cli.NewCommand(
-	cli.CommandSpec{
-		Name:  "add",
-		Short: "adds two floating point arguments",
-		Long:  "<long description of how addition works>",
-		Init:  func() interface{} { return new(CalcArgs) },
-		Action: func(args interface{}) {
-			fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
-		},
-	})
+  cli.CommandSpec{
+    Name:  "add",
+    Short: "adds two floating point arguments",
+    Long:  "<long description of how addition works>",
+    Init:  func() interface{} { return new(CalcArgs) },
+    Action: func(args interface{}) {
+      fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+    },
+  })
 
 mult := cli.NewCommand(
-	cli.CommandSpec{
-		Name:  "mult",
-		Short: "multiplies two floating point arguments",
-		Long:  "<long description of how multiplication works>",
-		Init:  func() interface{} { return new(CalcArgs) },
-		Action: func(args interface{}) {
-			fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
-		},
-	})
+  cli.CommandSpec{
+    Name:  "mult",
+    Short: "multiplies two floating point arguments",
+    Long:  "<long description of how multiplication works>",
+    Init:  func() interface{} { return new(CalcArgs) },
+    Action: func(args interface{}) {
+      fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+    },
+  })
 
 calc := cli.NewCommand(
-	cli.CommandSpec{
-		Name:        "calc",
-		Short:       "does calculations",
-		Long:        "<long explanation of arithmetic>",
-		Subcommands: []*cli.Command{add, mult},
-	})
+  cli.CommandSpec{
+    Name:        "calc",
+    Short:       "does calculations",
+    Long:        "<long explanation of arithmetic>",
+    Subcommands: []*cli.Command{add, mult},
+  })
 ```
 
 Now `calc` has two subcommands, and you can invoke addition with `calc.Run([]string{"add", "2", "3"})` and multiplication with `calc.Run([]string{"must", "2", "3"})`. On the command line it would, of course, look like:
@@ -208,15 +208,15 @@ The parent command, `calc` doesn’t have any action itself, and commands with s
 
 ```go
 calc := cli.NewCommand(
-	cli.CommandSpec{
-		Name:        "calc",
-		Short:       "does calculations",
-		Long:        "<long explanation of arithmetic>",
-		Action:      func(_ interface{}) {
-			fmt.Println("Hello from calc")
-		},
-		Subcommands: []*cli.Command{add, mult},
-	})
+  cli.CommandSpec{
+    Name:        "calc",
+    Short:       "does calculations",
+    Long:        "<long explanation of arithmetic>",
+    Action:      func(_ interface{}) {
+      fmt.Println("Hello from calc")
+    },
+    Subcommands: []*cli.Command{add, mult},
+  })
 ```
 
 the tool would print “Hello from calc” before dispatching:
@@ -234,9 +234,9 @@ The syntax for subcommands, especially the `[]*cli.Command{…}` bit is somewhat
 
 ```go
 calc := cli.NewMenu(
-	"calc", "does calculations",
-	"<long explanation of arithmetic>",
-	add, mult)
+  "calc", "does calculations",
+  "<long explanation of arithmetic>",
+  add, mult)
 ```
 
 It takes the name, short and long parameters and then a variadic number of commands as arguments.
@@ -245,16 +245,16 @@ You can nest commands and subcommands arbitrarily deep:
 
 ```go
 say := func(x string) func(interface{}) {
-	return func(argv interface{}) { fmt.Println(x) }
+  return func(argv interface{}) { fmt.Println(x) }
 }
 menu := cli.NewMenu("menu", "", "",
-	cli.NewMenu("foo", "", "",
-		cli.NewCommand(cli.CommandSpec{Name: "x", Action: say("menu/foo/x")}),
-		cli.NewCommand(cli.CommandSpec{Name: "y", Action: say("menu/foo/y")})),
-	cli.NewMenu("bar", "", "",
-		cli.NewCommand(cli.CommandSpec{Name: "x", Action: say("menu/bar/x")}),
-		cli.NewCommand(cli.CommandSpec{Name: "y", Action: say("menu/bar/y")})),
-	cli.NewCommand(cli.CommandSpec{Name: "baz", Action: say("menu/baz")}))
+  cli.NewMenu("foo", "", "",
+    cli.NewCommand(cli.CommandSpec{Name: "x", Action: say("menu/foo/x")}),
+    cli.NewCommand(cli.CommandSpec{Name: "y", Action: say("menu/foo/y")})),
+  cli.NewMenu("bar", "", "",
+    cli.NewCommand(cli.CommandSpec{Name: "x", Action: say("menu/bar/x")}),
+    cli.NewCommand(cli.CommandSpec{Name: "y", Action: say("menu/bar/y")})),
+  cli.NewCommand(cli.CommandSpec{Name: "baz", Action: say("menu/baz")}))
 
 menu.Run([]string{"baz"})      // will say menu/baz
 menu.Run([]string{"foo", "x"}) // will say menu/foo/x
