@@ -83,16 +83,11 @@ func (cmd *Command) Usage() { cmd.CommandSpec.Usage() }
 
 // SetUsage sets the function for printing usage information.
 // If you only set the Usage field in a spec, it only applies to
-// that spec, not the flags or parameters, nor subcommands. You
+// that spec, not the flags or parameters. You
 // should almost always use SetUsage() instead.
 func (cmd *Command) SetUsage(usage func()) {
 	cmd.flags.Usage = usage
 	cmd.params.Usage = usage
-
-	for _, sub := range cmd.Subcommands {
-		sub.SetUsage(usage)
-	}
-
 	cmd.CommandSpec.Usage = usage
 }
 
