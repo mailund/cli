@@ -237,27 +237,6 @@ func DefaultUsage(cmd *Command) func() {
 	}
 }
 
-// NewMenuError Create a new menu command, i.e. a command that will dispatch to
-// sub-commands. This is a convinience wrapper around a NewCommand with a spec
-// that has subcommands. It returns a new command or an error. It can only error
-// if there is an error in the specification, so usually you do not need this function
-// but should use NewMenu instead.
-//
-// Parameters:
-//   - name: Name of the command, used when printing usage.
-//   - short: Short description of the command, used when printing
-//     usage when the command is part of a Menu or when long is empty.
-//   - long: Long description of the command, used when printing usage.
-//   - subcmds: The subcommands you can invoke through this menu.
-func NewMenuError(name, short, long string, subcmds ...*Command) (*Command, error) {
-	return NewCommandError(CommandSpec{
-		Name:        name,
-		Short:       short,
-		Long:        long,
-		Subcommands: subcmds,
-	})
-}
-
 // NewMenu creates a menu command and panics if there are errors.
 // This is a convinience wrapper around a NewCommand with a spec
 // that has subcommands. It returns a new command or an error. It can only error
@@ -271,10 +250,14 @@ func NewMenuError(name, short, long string, subcmds ...*Command) (*Command, erro
 //   - long: Long description of the command, used when printing usage.
 //   - subcmds: The subcommands you can invoke through this menu.
 func NewMenu(name, short, long string, subcmds ...*Command) *Command {
-	cmd, err := NewMenuError(name, short, long, subcmds...)
-	if err != nil {
-		panic(fmt.Sprintf("Error: %s", err))
-	}
+	// A menu cannot fail. The subcommands are already parsed, and we don't
+	// provide any specs that can fail through the documentation strings.
+	cmd, _ := NewCommandError(CommandSpec{
+		Name:        name,
+		Short:       short,
+		Long:        long,
+		Subcommands: subcmds,
+	})
 
 	return cmd
 }

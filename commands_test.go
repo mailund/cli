@@ -313,3 +313,19 @@ func TestMenuFailure(t *testing.T) {
 		t.Errorf("Expected different error message than %s\n", errmsg)
 	}
 }
+
+func TestCommandPanic(t *testing.T) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Error("The code did not panic")
+		}
+	}()
+
+	type Invalid struct {
+		X complex128 `pos:"invalid type"`
+	}
+
+	_ = cli.NewCommand(cli.CommandSpec{
+		Init: func() interface{} { return new(Invalid) },
+	})
+}
