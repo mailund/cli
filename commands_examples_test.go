@@ -8,9 +8,35 @@ import (
 )
 
 func ExampleCommand() {
+	cmd := cli.NewCommand(
+		cli.CommandSpec{
+			Name:  "first",
+			Short: "my first command",
+			Long:  "The first command I ever made",
+		})
+
+	cmd.Run([]string{})
+
+	// Output:
+}
+
+func ExampleCommand_second() {
+	cmd := cli.NewCommand(
+		cli.CommandSpec{
+			Name:   "hello",
+			Short:  "prints hello world",
+			Action: func(_ interface{}) { fmt.Println("hello, world!") },
+		})
+
+	cmd.Run([]string{})
+
+	// Output: hello, world!
+}
+
+func ExampleCommand_third() {
 	type AddArgs struct {
-		X int `arg:"x" descr:"first addition argument"`
-		Y int `arg:"y" descr:"first addition argument"`
+		X int `pos:"x" descr:"first addition argument"`
+		Y int `pos:"y" descr:"first addition argument"`
 	}
 
 	add := cli.NewCommand(
@@ -33,10 +59,10 @@ func ExampleCommand() {
 	// Output: Result: 4
 }
 
-func ExampleCommand_second() {
+func ExampleCommand_fourth() {
 	type NumArgs struct {
 		Round bool      `flag:"round" descr:"should result be rounded to nearest integer"`
-		Args  []float64 `arg:"args" descr:"numerical arguments to command"`
+		Args  []float64 `pos:"args" descr:"numerical arguments to command"`
 	}
 
 	cmd := cli.NewCommand(
@@ -69,10 +95,10 @@ func ExampleCommand_second() {
 	// Result: 4.000000
 }
 
-func ExampleCommand_third() {
+func ExampleCommand_fifth() {
 	type NumArgs struct {
 		Round bool      `flag:"round"`
-		Args  []float64 `arg:"args"`
+		Args  []float64 `pos:"args"`
 	}
 
 	cmd := cli.NewCommand(
@@ -81,12 +107,9 @@ func ExampleCommand_third() {
 			Short: "adds floating point arguments",
 			Long:  "<long description of how addition works>",
 			Init: func() interface{} {
-				var argv NumArgs
-
-				// Make the default argument true
+				argv := new(NumArgs)
 				argv.Round = true
-
-				return &argv
+				return argv
 			},
 			Action: func(args interface{}) {
 				argv, _ := args.(*NumArgs)
@@ -112,61 +135,137 @@ func ExampleCommand_third() {
 	// Result: 3.860000
 }
 
-func ExampleNewMenu() {
-	apply := func(init float64, op func(x, y float64) float64, args []float64) float64 {
-		res := init
-		for _, x := range args {
-			res = op(res, x)
-		}
-
-		return res
-	}
-	add := func(x, y float64) float64 { return x + y }
-	prod := func(x, y float64) float64 { return x * y }
-
-	type NumCommand struct {
-		Args []float64 `arg:"args" descr:"arguments"`
+func ExampleCommand_sixth() {
+	type CalcArgs struct {
+		X int `pos:"x" descr:"first addition argument"`
+		Y int `pos:"y" descr:"first addition argument"`
 	}
 
-	init := func() interface{} {
-		return new(NumCommand)
-	}
-	doSum := func(args interface{}) {
-		fmt.Printf("Result: %f\n", apply(0, add, args.(*NumCommand).Args))
-	}
-	doProd := func(args interface{}) {
-		fmt.Printf("Result: %f\n", apply(1, prod, args.(*NumCommand).Args))
-	}
-
-	sum := cli.NewCommand(
+	add := cli.NewCommand(
 		cli.CommandSpec{
-			Name:   "+",
-			Short:  "adds floating point arguments",
-			Long:   "<long description of how addition works>",
-			Init:   init,
-			Action: doSum,
+			Name:  "add",
+			Short: "adds two floating point arguments",
+			Long:  "<long description of how addition works>",
+			Init:  func() interface{} { return new(CalcArgs) },
+			Action: func(args interface{}) {
+				fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+			},
 		})
+
 	mult := cli.NewCommand(
 		cli.CommandSpec{
-			Name:   "*",
-			Short:  "multiplies floating point arguments",
-			Long:   "<long description of how multiplication works>",
-			Init:   init,
-			Action: doProd,
+			Name:  "mult",
+			Short: "multiplies two floating point arguments",
+			Long:  "<long description of how multiplication works>",
+			Init:  func() interface{} { return new(CalcArgs) },
+			Action: func(args interface{}) {
+				fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+			},
 		})
 
-	calc := cli.NewMenu("calc", "does calculations",
-		"<long description of how math works>",
-		sum, mult)
+	calc := cli.NewCommand(
+		cli.CommandSpec{
+			Name:        "calc",
+			Short:       "does calculations",
+			Long:        "<long explanation of arithmetic>",
+			Subcommands: []*cli.Command{add, mult},
+		})
 
-	// Will call the sum command
-	calc.Run([]string{"+", "0.42", "3.14", "0.3"})
-	// Will call the mult command
-	calc.Run([]string{"*", "0.42", "3.14", "0.3"})
+	calc.Run([]string{"add", "2", "3"})
+	calc.Run([]string{"mult", "2", "3"})
 
 	// Output:
-	// Result: 3.860000
-	// Result: 0.395640
+	// Result: 5
+	// Result: 6
+}
+
+func ExampleCommand_seventh() {
+	type CalcArgs struct {
+		X int `pos:"x" descr:"first addition argument"`
+		Y int `pos:"y" descr:"first addition argument"`
+	}
+
+	add := cli.NewCommand(
+		cli.CommandSpec{
+			Name:  "add",
+			Short: "adds two floating point arguments",
+			Long:  "<long description of how addition works>",
+			Init:  func() interface{} { return new(CalcArgs) },
+			Action: func(args interface{}) {
+				fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+			},
+		})
+
+	mult := cli.NewCommand(
+		cli.CommandSpec{
+			Name:  "mult",
+			Short: "multiplies two floating point arguments",
+			Long:  "<long description of how multiplication works>",
+			Init:  func() interface{} { return new(CalcArgs) },
+			Action: func(args interface{}) {
+				fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+			},
+		})
+
+	calc := cli.NewCommand(
+		cli.CommandSpec{
+			Name:  "calc",
+			Short: "does calculations",
+			Long:  "<long explanation of arithmetic>",
+			Action: func(_ interface{}) {
+				fmt.Println("Hello from calc")
+			},
+			Subcommands: []*cli.Command{add, mult},
+		})
+
+	calc.Run([]string{"add", "2", "3"})
+	calc.Run([]string{"mult", "2", "3"})
+
+	// Output:
+	// Hello from calc
+	// Result: 5
+	// Hello from calc
+	// Result: 6
+}
+
+func ExampleNewMenu() {
+	type CalcArgs struct {
+		X int `pos:"x" descr:"first addition argument"`
+		Y int `pos:"y" descr:"first addition argument"`
+	}
+
+	add := cli.NewCommand(
+		cli.CommandSpec{
+			Name:  "add",
+			Short: "adds two floating point arguments",
+			Long:  "<long description of how addition works>",
+			Init:  func() interface{} { return new(CalcArgs) },
+			Action: func(args interface{}) {
+				fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+			},
+		})
+
+	mult := cli.NewCommand(
+		cli.CommandSpec{
+			Name:  "mult",
+			Short: "multiplies two floating point arguments",
+			Long:  "<long description of how multiplication works>",
+			Init:  func() interface{} { return new(CalcArgs) },
+			Action: func(args interface{}) {
+				fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+			},
+		})
+
+	calc := cli.NewMenu(
+		"calc", "does calculations", "<long explanation of arithmetic>",
+		add, mult)
+
+	calc.Run([]string{"add", "2", "3"})
+	calc.Run([]string{"mult", "2", "3"})
+
+	// Output:
+	// Result: 5
+	// Result: 6
 }
 
 func ExampleNewMenu_second() {

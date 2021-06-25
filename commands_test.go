@@ -35,7 +35,7 @@ func TestNewCommandError(t *testing.T) {
 func TestNewCommandUsage(t *testing.T) { //nolint:funlen // Only too long because of usage strings
 	type argv struct {
 		Foo string `flag:"foo" descr:"set foo"`
-		Bar string `arg:"bar" descr:"a bar"`
+		Bar string `pos:"bar" descr:"a bar"`
 	}
 
 	cmd := cli.NewCommand(cli.CommandSpec{
@@ -165,7 +165,7 @@ func TestOption(t *testing.T) {
 
 func TestParam(t *testing.T) {
 	type Testargs struct {
-		X int `arg:"x" descr:"an integer"`
+		X int `pos:"x" descr:"an integer"`
 	}
 
 	argX := 0

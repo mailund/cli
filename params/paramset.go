@@ -35,16 +35,26 @@ const (
 	PanicOnError = flag.PanicOnError
 )
 
+// Param holds positional parameter information.
 type Param struct {
-	Name   string
-	Desc   string
+	// Name is the short name used for a parameter
+	Name string
+	// Desc is a short description of the parameter
+	Desc string
+
 	parser func(string) error
 }
 
+// VariadicParam holds information about a variadic argument.
 type VariadicParam struct {
-	Name   string
-	Desc   string
-	Min    int
+	// Name is the short name used for a parameter
+	Name string
+	// Desc is a short description of the parameter
+	Desc string
+	// Min is the minimum number of parameters that the variadic
+	// parameter takes.
+	Min int
+
 	parser func([]string) error
 }
 

@@ -164,8 +164,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				params.NewParamSet("test", flag.ExitOnError),
 				func() interface{} {
 					var x struct {
-						Foo int    `arg:"foo" descr:"foo"`
-						Bar string `arg:"bar" descr:"bar"`
+						Foo int    `pos:"foo" descr:"foo"`
+						Bar string `pos:"bar" descr:"bar"`
 					}
 
 					x.Foo = 42
@@ -186,10 +186,10 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					F3 float64 `flag:"f3"`
 					F4 string  `flag:"f4"`
 
-					A1 int     `arg:"f1"`
-					A2 bool    `arg:"f2"`
-					A3 float64 `arg:"f3"`
-					A4 string  `arg:"f4"`
+					A1 int     `pos:"f1"`
+					A2 bool    `pos:"f2"`
+					A3 float64 `pos:"f3"`
+					A4 string  `pos:"f4"`
 				}),
 			},
 		},
@@ -211,7 +211,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					B complex128 `arg:"b"`
+					B complex128 `pos:"b"`
 				}),
 			},
 			err: SpecErrorf(`unsupported type for parameter b: "complex128"`),
@@ -223,7 +223,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					X []bool `arg:"x"`
+					X []bool `pos:"x"`
 				}),
 			},
 		},
@@ -233,7 +233,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					X []int `arg:"x" min:"2"`
+					X []int `pos:"x" min:"2"`
 				}),
 			},
 		},
@@ -243,7 +243,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					X []float64 `arg:"x"`
+					X []float64 `pos:"x"`
 				}),
 			},
 		},
@@ -253,7 +253,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					X []string `arg:"x" descr:"foo"`
+					X []string `pos:"x" descr:"foo"`
 				}),
 			},
 		},
@@ -263,7 +263,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					X []string `arg:"x" descr:"foo" min:"not an int"`
+					X []string `pos:"x" descr:"foo" min:"not an int"`
 				}),
 			},
 			err: SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
@@ -275,7 +275,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					B []func(x, y int) int `arg:"b"`
+					B []func(x, y int) int `pos:"b"`
 				}),
 			},
 			err: SpecErrorf(`unsupported slice type for parameter b: "func"`),
@@ -286,8 +286,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					A []int `arg:"a"`
-					B []int `arg:"b"`
+					A []int `pos:"a"`
+					B []int `pos:"b"`
 				}),
 			},
 			err: SpecErrorf("a command spec cannot contain more than one variadic parameter"),
@@ -356,7 +356,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					A func(string) error `arg:"a"`
+					A func(string) error `pos:"a"`
 				}),
 			},
 			err: SpecErrorf("callbacks cannot be nil"),
@@ -367,7 +367,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					A func(int) error `arg:"a"`
+					A func(int) error `pos:"a"`
 				}),
 			},
 			err: SpecErrorf("callbacks must have signature func(string) error"),
@@ -378,7 +378,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					A func(string) `arg:"a"`
+					A func(string) `pos:"a"`
 				}),
 			},
 			err: SpecErrorf("callbacks must have signature func(string) error"),
@@ -391,7 +391,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				func() interface{} {
 					var f = func(x string) error { return nil }
 					var x = struct {
-						A func(string) error `arg:"a"`
+						A func(string) error `pos:"a"`
 					}{A: f}
 					return &x
 				}(),

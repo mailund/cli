@@ -9,18 +9,25 @@ import (
 	"github.com/mailund/cli/params"
 )
 
+// SpecError is the error type returned if there are problems with a
+// specification
 type SpecError struct {
 	Message string
 }
 
+// SpecErrorf creates a SpecError from a format string and arguments
 func SpecErrorf(format string, args ...interface{}) *SpecError {
 	return &SpecError{fmt.Sprintf(format, args...)}
 }
 
+// Error returns a string representation of a SpecError, implementing
+// the error interface.
 func (err *SpecError) Error() string {
 	return err.Message
 }
 
+// FIXME: there must be a better way of getting the reflection type
+// of a function type...
 var uglyHack func(string) error // just a way to get the signature
 var callbackSignature = reflect.TypeOf(uglyHack)
 
@@ -135,7 +142,7 @@ func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interf
 			}
 		}
 
-		if name, isArg := tfield.Tag.Lookup("arg"); isArg {
+		if name, isPos := tfield.Tag.Lookup("pos"); isPos {
 			if tfield.Type.Kind() == reflect.Slice {
 				if seenVariadic {
 					return SpecErrorf("a command spec cannot contain more than one variadic parameter")
@@ -154,5 +161,3 @@ func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interf
 
 	return nil
 }
-
-// TODO: connect specs with commands; no variadic for commands with subcommands

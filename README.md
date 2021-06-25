@@ -27,210 +27,252 @@ where `cmd` is the command line tool, the first flags, `-x` and `-foo` are optio
 
 Go's `flag` package handles flags, and does it very well, but it doesn't handle arguments or subcommands. There are other packages that implement support for subcommands, but not any that I much liked, so I implemented this module to get something more to my taste.
 
-## Command line parameters
-
-The package `params` in this module handles positional arguments. It is inspired by Go's `flag` module in how it handles them. To specify a set of arguments, you create an object of type `params.ParamSet`. It takes a name as its first argument, it is used when printing usage information if parsing failes, and a flag that determines whether parse errors should terminate the program or not. It is the same flag that `flag.NewFlags()` uses.
-
-```go
-p := params.NewParamSet("name", params.ExitOnError)
-```
-
-You probably always want to use `ExitOnError` for the flag. It will print usage information and terminate the program. The commands described below will always use this (although you can modify it if you want to). For command line tools, you generally want some helpful information printed, and then terminate, rather than trying to deal with incorrect parameters.
-
-Once you have created the parameteter set, you install parameters of various type into it, the same way as you install flags with `flag`. For example, we can create a parameter set and install four variables, one for integers, one for boolean, one for floats and one for strings:
-
-```go
-// Variables we want to parse
-var (
-	i int
-	b bool
-)
-
-p.IntVar(&i, "I", "an integer argument")
-p.BoolVar(&b, "B", "a boolean argument")
-f := p.Float("F", "a float argument")
-s := p.String("S", "a string argument")
-```
-
-For each of the types, there is a `TypeVar()` function, where you provide a pointer to where you want the parsed value to go, or you can use a `Type()` function that will provide you with a pointer to where the value will go. The two string arguments are the name of the parameter and a short description, used when printing usage information. The order in which you install the parameters is the order in which you must provide them on the commandline.
-
-When you have all your parameters, you can parse a commandline:
-
-```go
-p.Parse([]string{"42", "t", "3.14", "foo"})
-// Now you have your arguments:
-fmt.Printf("I=%d, B=%t, F=%f, S='%s'\n", i, b, *f, *s)
-```
-
-If parsing fails, and you were sensible enough to use `ExitOnError`, you won't continue after the parsing, so you can always assume that parameters were parsed correctly and are available in the variables they are associated with.
-
-Somtimes you want more than one argument to a parameter. For a generic command line parser, it is impossible to figure out which arguments go where, unless it is the last parameter, so that is all we can handle here. You can install a variadic paramter, that will always be the last argument in the set (regardless of whether you install other parameters after, but please don't, since that can get confusing).
-
-As an example of variadic paramters, consider a program where we want to calculate either the sum or product of a number of floating point values. Here, we can install a string parameter to pick the operation from, and then a variadic float parameter that will gobble up the rest of the arguments. You can provide a minimum number of arguments for a variadic parameter (but currently not a maximum), but in the example below I have set it to zero.
-
-```go
-p := params.NewParamSet("calc", params.ExitOnError)
-
-// Variables we want to parse
-var (
-	op   string
-	args []float64
-)
-p.StringVar(&op, "op", "operation to perform")
-p.VariadicFloatVar(&args, "args", "arg [args...]", 0)
-
-p.Parse([]string{"+", "0.42", "3.14", "0.3"})
-switch op {
-case "+":
-	res := 0.0
-	for _, x := range args {
-		res += x
-	}
-	fmt.Printf("Result: %f\n", res)
-case "*":
-	res := 1.0
-	for _, x := range args {
-		res *= x
-	}
-	fmt.Printf("Result: %f\n", res)
-default:
-	fmt.Fprintf(os.Stderr, "I didn't implement any more ops!\n")
-	os.Exit(2)
-}
-```
-
-The `op` parameter should either be '+' or '*', but the parser doesn't handle that yet. It is on my [TODO-list](https://github.com/mailund/cli/issues/1). The interesting part in the example, anyway, is the variadic parameter. It should be a slice of the right type, and when the arguments are parsed, the slice will have the parsed values.
-
-Dispatching on an operator looks awfully lot like subcommands, so let us get to commands and subcommands...
 
 ## Commands
 
-When you want a command line `Command`, you call `NewCommand` with four parameters. The first is the command's name, then you provide a short and a long description that is used when printing usage information, and finally a function that sets up the command. Needless to say, it is in the fourth parameter that the magic happens. Here is an example:
+Commands are created with the `NewCommand` function from a command specification. The specification provides information about the name of the command, documentation as two strings, a short used when listing subcommands and a long used when showing usage of a specific command.
+
+A command, that does absolutely nothing, but that you can run, could look like this:
 
 ```go
 cmd := cli.NewCommand(
-	"sum", "adds floating point arguments",
-	"<long description of how addition works>",
-	func(cmd *cli.Command) func() {
-		// Arguments to the command
-		var round bool
-		var args []float64
-
-		// Install arguments, one as a flag and one as a positional arg
-		cmd.Flags.BoolVar(&round, "round", false, "round off result")
-		cmd.Params.VariadicFloatVar(&args, "args", "arg [args...]", 0)
-
-		// Then return the function for executing the command
-		return func() {
-			res := 0.0
-			for _, x := range args {
-				res += x
-			}
-			if round {
-				res = math.Round(res)
-			}
-			fmt.Printf("Result: %f\n", res)
-		}
+	cli.CommandSpec{
+		Name:  "first",
+		Short: "my first command",
+		Long:  "The first command I ever made",
 	})
 ```
 
-The function should take a `cli.Command` as argument and provide a thunk (function without arguments) as its result. The object it is called with is the command we are creating, and it can use it to setup how the command should be executed (and change a few things in the command if necessary). In the example above, the callback function creates two arguments, `round` and `args`, adds `round` to the command's flags (those are of the type from Go's flag package) and adds `args` as a variadic positional argument. Then it returns a function that will add all the arguments in `args` when we call it, and round them off if the `round` flag is set.
-
-The reason the design looks like this is that I want commands to call user-specified callback functions when we have parsed all arguments, potentially also after dispatching to sub-commands, and the callback should have access to the flags and parameters when they are parsed. There isn't any easy and type-safe method to wrap up parsed options and provide them to a generic function, but through this callback approach, the user can define flags and positional arguments in a closure, and thus the callback that the command gets will already know about them.
-
-If you want to execute a command, you `Run()` it. Here's a call without the `round` flag:
+If you want to run it, you call its `Run()` method with a slice of strings:
 
 ```go
-cmd.Run([]string{"0.42", "3.14", "0.3"})
+cmd.Run([]string{})
 ```
 
-and here is one where we include the flag
+This command doesn’t take any arguments, flags or positional, so you have to give it an empty slice.
+
+If you want a command to do something when you call it, you must provide an `Action` in the specification. That is a function that takes an `interface{}` as its sole argument and doesn’t return anything. A “hello, world” command would look like this:
 
 ```go
-cmd.Run([]string{"-round", "0.42", "3.14", "0.3"})
+cmd := cli.NewCommand(
+		cli.CommandSpec{
+			Name:   "hello",
+			Short:  "prints hello world",
+			Action: func(_ interface{}) {
+				fmt.Println("hello, world!")
+			},
+		})
 ```
 
-## Subcommands
+If you run this command, `cmd.Run([]string{})`, it will print “hello, world!”.
 
-Getting back to doing both addition and multiplication: here we have two different commands. One for each of the operations. We usually do not consider that different command line arguments, but why not? We could, and I will.
+The `interface{}` argument is where the action gets its arguments. To supply command arguments, you must define a type and one more function.
 
-If you want to have sub-commands, you use the `NewMenu()` function. It creates a command wit subcommands. Here is a menu that lets you choose between executing a `+` or a `*` command:
+Let’s say we want a command that adds two numbers. For that, we need to arguments, and we will make them positional. We create a type for the arguments that looks like this:
 
 ```go
-type operator = func(float64, float64) float64
-type initFunc = func(cmd *cli.Command) func()
-
-apply := func(init float64, op operator, args []float64) float64 {
-	res := init
-	for _, x := range args {
-		res = op(res, x)
-	}
-	return res
+type AddArgs struct {
+	X int `pos:"x" descr:"first addition argument"`
+	Y int `pos:"y" descr:"first addition argument"`
 }
-initCmd := func(init float64, op operator) initFunc {
-	return func(cmd *cli.Command) func() {
-		var args []float64
-		cmd.Params.VariadicFloatVar(&args, "args", "arg [args...]", 0)
-		return func() {
-			fmt.Printf("Result: %f\n", apply(init, op, args))
-		}
-	}
+```
+
+The fields `X` and `Y` must be capitalised, because `cli` uses reflection to analyse the structure. The tags after the types is where we tell `cli` about the arguments. We make a field a positional argument using the tag `pos:"name"`, and if we want to give the parameter a description, we do so with `descr:"description"`. If you want a flag instead of a positional argument, you use `flag:"name"` instead of `pos:"name"`. You don’t need tags for all the fields in the structure you want to give your command, but those you want `cli` to parse, you do.
+
+To set up arguments, you proved another function, `Init`. It should return an `interface{}`, and it is that `interface{}` that `cli` parses for tags and that it provides to `Action` when the command runs.
+
+We could set up our command for adding two numbers like this:
+
+
+```go
+add := cli.NewCommand(
+	cli.CommandSpec{
+		Name:  "add",
+		Short: "adds two floating point arguments",
+		Long:  "<long description of how addition works>",
+		Init:  func() interface{} { return new(AddArgs) },
+		Action: func(args interface{}) {
+			// Get the argumens through casting the args
+			argv, _ := args.(*AddArgs)
+
+			// Then we can do our calculations with the arguments
+			fmt.Printf("Result: %d\n", argv.X+argv.Y)
+		},
+	})
+```
+
+The function we provide to `Init` returns a pointer to a new `AddArgs`, and when `Action` is called, it can cast the `interface{}` argument to `*AddArgs` and get the positional values. If you run it with `add.Run([]string{"2", "2"})` it will print `Result: 4` as expected.
+
+Here’s a variation that adds a flag as well:
+
+```go
+type NumArgs struct {
+	Round bool      `flag:"round" descr:"should result be rounded to nearest integer"`
+	Args  []float64 `pos:"args" descr:"numerical arguments to command"`
 }
 
-sum := cli.NewCommand(
-	"+", "adds floating point arguments",
-	"<long description of how addition works>",
-	initCmd(0, func(x, y float64) float64 { return x + y }))
+cmd := cli.NewCommand(
+	cli.CommandSpec{
+		Name:  "sum",
+		Short: "adds floating point arguments",
+		Long:  "<long description of how addition works>",
+		Init:  func() interface{} { return new(NumArgs) },
+		Action: func(args interface{}) {
+			argv, _ := args.(*NumArgs)
+			res := 0.0
+			for _, x := range argv.Args {
+				res += x
+			}
+			if argv.Round {
+				res = math.Round(res)
+			}
+			fmt.Printf("Result: %f\n", res)
+		},
+	})
+```
+
+The type `NumArgs` has both a `flag:` and `pos:` tag, creating a boolean flag determining whether we should round the result of the calculations and a variadic (multiple argument) positional variable of type `[]float64`, which means that the command will be able to take any number of float arguments.
+
+The `Init` function again just creates a `new(NumArgs)`, and the `Action` is a little more complicated, but only because it calculates the sum of multiple values. The way it handles the arguments is the same: it casts the argument to `*NumArgs` and from there it can get both the flag and the float positional arguments.
+
+Run it with `cmd.Run([]string{"0.42", "3.14", "0.3"})` it and will print the sum (3.860000) and with `cmd.Run([]string{"-round", "0.42", "3.14", "0.3"})` and it will round the result (4.000000 — it is a silly example, so I still print it as a float…).
+
+Flags have default values, so how do we deal with that? The short answer is that the default values for flags are the values the struct’s fields have when you give it to `cli`. That means that your `Init` function can set the default values simply by setting the struct’s fields before it returns it.
+
+This is how we could make the `-round` flag default to `true`:
+
+```go
+cmd := cli.NewCommand(
+	cli.CommandSpec{
+		// The other arguments are the same as before…
+		Init: func() interface{} {
+			argv := new(NumArgs)
+			argv.Round = true
+			return argv
+		},
+		Action: func(args interface{}) {
+			// the Action function is the same as before
+		},
+	})
+```
+
+
+Simply setting `argv.Round = true` before we return from `Init` will make `true` the default value for the flag.
+
+You can nest commands to make subcommands. Say we want a tool that can do both addition and multiplication. We can create a command with two subcommands to achieve this. The straightforward way to do this is to give a command a `Subcommands` in its specification. It can look like this:
+
+```go
+type CalcArgs struct {
+	X int `pos:"x" descr:"first addition argument"`
+	Y int `pos:"y" descr:"first addition argument"`
+}
+
+add := cli.NewCommand(
+	cli.CommandSpec{
+		Name:  "add",
+		Short: "adds two floating point arguments",
+		Long:  "<long description of how addition works>",
+		Init:  func() interface{} { return new(CalcArgs) },
+		Action: func(args interface{}) {
+			fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+		},
+	})
+
 mult := cli.NewCommand(
-	"*", "multiplies floating point arguments",
-	"<long description of how multiplication works>",
-	initCmd(1, func(x, y float64) float64 { return x * y }))
+	cli.CommandSpec{
+		Name:  "mult",
+		Short: "multiplies two floating point arguments",
+		Long:  "<long description of how multiplication works>",
+		Init:  func() interface{} { return new(CalcArgs) },
+		Action: func(args interface{}) {
+			fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+		},
+	})
 
-calc := cli.NewMenu("calc", "does calculations",
-	"<long description of how math works>",
-	sum, mult)
+calc := cli.NewCommand(
+	cli.CommandSpec{
+		Name:        "calc",
+		Short:       "does calculations",
+		Long:        "<long explanation of arithmetic>",
+		Subcommands: []*cli.Command{add, mult},
+	})
 ```
 
-The first half of the example is just there because Go is a bit verbose when it comes to defining functions, and I want an apply function that generalises the two operators. I don't think Go has one, but if it does, please correct me. Anyway, I define an `apply` function that will do one operation over all floats in a slice, starting with some initial value. Then I write a function that creates a command initialisation callback by setting variadic arguments and then running `apply` with the `init` and `op` I give it. That has nothing to do with commands; I just didn't want a lot of replicated code like I had earlier.
+Now `calc` has two subcommands, and you can invoke addition with `calc.Run([]string{"add", "2", "3"})` and multiplication with `calc.Run([]string{"must", "2", "3"})`. On the command line it would, of course, look like:
 
-Then, and this is where it is relevant for the `cli` module, I create a `sum` and `mult` command (named `+` and `*`), with the `initCmd` function doing the setup. And with `NewMenu()` I put these in a command called `calc`.
-
-A menu command takes a variable number of commands, the first of which must be the name of one of its subcommands (here `+` or `*`; it looks at the name we give the commands, not the variables). If you run `calc`, you specify which subcommand to via the first argument. This will call `sum`:
-
-```go
-calc.Run([]string{"+", "0.42", "3.14", "0.3"})
+```sh
+> calc add 2 3
+Result: 5
+> calc mult 2 3
+Result: 6
 ```
 
-and this will call `mult`:
+The parent command, `calc` doesn’t have any action itself, and commands with subcommands do not have to. When a command has subcommands, `cli` automatically dispatches to the subcommands. If you provide an `Action`, however, it is called before the dispatch, and the dispatching is done after it complets. If we changed the `calc` command to this:
 
 ```go
-calc.Run([]string{"*", "0.42", "3.14", "0.3"})
+calc := cli.NewCommand(
+	cli.CommandSpec{
+		Name:        "calc",
+		Short:       "does calculations",
+		Long:        "<long explanation of arithmetic>",
+		Action:      func(_ interface{}) {
+			fmt.Println("Hello from calc")
+		},
+		Subcommands: []*cli.Command{add, mult},
+	})
 ```
 
-Any other first argument will be an error, and then `calc` will write some useful usage information and terminate the program.
+the tool would print “Hello from calc” before dispatching:
 
-You can nest menus arbitrarily deep. As the package parses a command line, a menu will always use its first positional parameter to dispatch to the next command, calling its `Run()` function with all arguments except the first (that was the commands name), so menus do not need to know where they are in the hierarhy. They will get a string slice of arguments, use the first to pick a subcommand, and then run the subcommand with the remaining. Once this procedure hits a non-menu command, it is run with the arguments that remain after moving into the menu hierarchy.
+```sh
+> calc add 2 3
+Hello from calc
+Result: 5
+> calc mult 2 3
+Hello from calc
+Result: 6
+```
 
-In this example, for example, different commands are picked based on the sequence of initial arguments:
+The syntax for subcommands, especially the `[]*cli.Command{…}` bit is somewhat cumbersome, and we usually do not associate arguments and actions to most commands that merely function as menus, so there is a convenience function that does the same thing:
 
 ```go
-say := func(x string) func(*cli.Command) func() {
-	// Sorry this is ugly, but I didn't want to write a lot of boiler plate
-	// code below.
-	return func(*cli.Command) func() { return func() { fmt.Println(x) } }
+calc := cli.NewMenu(
+	"calc", "does calculations",
+	"<long explanation of arithmetic>",
+	add, mult)
+```
+
+It takes the name, short and long parameters and then a variadic number of commands as arguments.
+
+You can nest commands and subcommands arbitrarily deep:
+
+```go
+say := func(x string) func(interface{}) {
+	return func(argv interface{}) { fmt.Println(x) }
 }
 menu := cli.NewMenu("menu", "", "",
 	cli.NewMenu("foo", "", "",
-		cli.NewCommand("x", "", "", say("menu/foo/x")),
-		cli.NewCommand("y", "", "", say("menu/foo/y"))),
+		cli.NewCommand(cli.CommandSpec{Name: "x", Action: say("menu/foo/x")}),
+		cli.NewCommand(cli.CommandSpec{Name: "y", Action: say("menu/foo/y")})),
 	cli.NewMenu("bar", "", "",
-		cli.NewCommand("x", "", "", say("menu/bar/x")),
-		cli.NewCommand("y", "", "", say("menu/bar/y"))),
-	cli.NewCommand("baz", "", "", say("menu/baz")))
+		cli.NewCommand(cli.CommandSpec{Name: "x", Action: say("menu/bar/x")}),
+		cli.NewCommand(cli.CommandSpec{Name: "y", Action: say("menu/bar/y")})),
+	cli.NewCommand(cli.CommandSpec{Name: "baz", Action: say("menu/baz")}))
 
 menu.Run([]string{"baz"})      // will say menu/baz
 menu.Run([]string{"foo", "x"}) // will say menu/foo/x
 menu.Run([]string{"bar", "y"}) // will say menu/bar/y
 ```
 
-If the arguments get to an unknown command, the parsing will terminate with an error message, and the same happens if you end up at a menu command without a sub-command left to dispatch on.
+When you use subcommands, as you can see above, you don’t provide the name of the root command in the arguments. The root will usually be the executable, so if the executable for the example above is called `menu`, we would have:
+
+```sh
+> menu baz
+menu/baz
+> menu foo x
+menu/foo/x
+> menu bar y
+menu/bar/y
+```
+
+so it all works out.

@@ -67,6 +67,8 @@ func (cmd *Command) SetOutput(out io.Writer) {
 	cmd.out = out
 }
 
+// SetErrorFlag recursively sets error handling flags on the command's flags
+// and params, and on all subcommands this command holds.
 func (cmd *Command) SetErrorFlag(f flag.ErrorHandling) {
 	cmd.flags.Init(cmd.Name, f)
 	cmd.params.SetFlag(f)
@@ -131,7 +133,7 @@ func (cmd *Command) Run(args []string) {
 	}
 }
 
-// NewCommand Create a new command. The function returns a new command object or an error.
+// NewCommandError Create a new command. The function returns a new command object or an error.
 // Since errors are only possible if the specification is incorrect in some way, you will
 // usually want NewCommand, that panics on errors, instead.
 //
