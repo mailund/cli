@@ -106,9 +106,10 @@ func checkFlagsParams(t *testing.T, f *flag.FlagSet, p *params.ParamSet, argv in
 
 func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be long...
 	type args struct {
-		f    *flag.FlagSet
-		p    *params.ParamSet
-		argv interface{}
+		f             *flag.FlagSet
+		p             *params.ParamSet
+		argv          interface{}
+		allowVariadic bool
 	}
 
 	tests := []struct {
@@ -123,6 +124,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct{}),
+				true,
 			},
 		},
 		{
@@ -139,6 +141,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 					return &x
 				}(),
+				true,
 			},
 		},
 		{
@@ -155,6 +158,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 					return &x
 				}(),
+				true,
 			},
 		},
 		{
@@ -173,6 +177,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 					return &x
 				}(),
+				true,
 			},
 		},
 		{
@@ -191,6 +196,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					A3 float64 `pos:"f3"`
 					A4 string  `pos:"f4"`
 				}),
+				true,
 			},
 		},
 
@@ -202,6 +208,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					B []bool `flag:"b"`
 				}),
+				true,
 			},
 			err: SpecErrorf(`unsupported type for flag b: "slice"`),
 		},
@@ -213,6 +220,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					B complex128 `pos:"b"`
 				}),
+				true,
 			},
 			err: SpecErrorf(`unsupported type for parameter b: "complex128"`),
 		},
@@ -225,6 +233,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					X []bool `pos:"x"`
 				}),
+				true,
 			},
 		},
 		{
@@ -235,6 +244,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					X []int `pos:"x" min:"2"`
 				}),
+				true,
 			},
 		},
 		{
@@ -245,6 +255,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					X []float64 `pos:"x"`
 				}),
+				true,
 			},
 		},
 		{
@@ -255,6 +266,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					X []string `pos:"x" descr:"foo"`
 				}),
+				true,
 			},
 		},
 		{
@@ -265,6 +277,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					X []string `pos:"x" descr:"foo" min:"not an int"`
 				}),
+				true,
 			},
 			err: SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
 		},
@@ -277,6 +290,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					B []func(x, y int) int `pos:"b"`
 				}),
+				true,
 			},
 			err: SpecErrorf(`unsupported slice type for parameter b: "func"`),
 		},
@@ -289,6 +303,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					A []int `pos:"a"`
 					B []int `pos:"b"`
 				}),
+				true,
 			},
 			err: SpecErrorf("a command spec cannot contain more than one variadic parameter"),
 		},
@@ -301,6 +316,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					A func(string) error `flag:"a"`
 				}),
+				true,
 			},
 			err: SpecErrorf("callbacks cannot be nil"),
 		},
@@ -312,6 +328,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					A func(int) error `flag:"a"`
 				}),
+				true,
 			},
 			err: SpecErrorf("callbacks must have signature func(string) error"),
 		},
@@ -323,6 +340,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					A func(string) `flag:"a"`
 				}),
+				true,
 			},
 			err: SpecErrorf("callbacks must have signature func(string) error"),
 		},
@@ -338,6 +356,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					}{A: f}
 					return &x
 				}(),
+				true,
 			},
 			hook: func(t *testing.T, a args) {
 				t.Helper()
@@ -358,6 +377,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					A func(string) error `pos:"a"`
 				}),
+				true,
 			},
 			err: SpecErrorf("callbacks cannot be nil"),
 		},
@@ -369,6 +389,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					A func(int) error `pos:"a"`
 				}),
+				true,
 			},
 			err: SpecErrorf("callbacks must have signature func(string) error"),
 		},
@@ -380,6 +401,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				new(struct {
 					A func(string) `pos:"a"`
 				}),
+				true,
 			},
 			err: SpecErrorf("callbacks must have signature func(string) error"),
 		},
@@ -395,6 +417,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					}{A: f}
 					return &x
 				}(),
+				true,
 			},
 			hook: func(t *testing.T, a args) {
 				t.Helper()
@@ -410,7 +433,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := connectSpecsFlagsAndParams(tt.args.f, tt.args.p, tt.args.argv); err != nil {
+			if err := connectSpecsFlagsAndParams(tt.args.f, tt.args.p, tt.args.argv, tt.args.allowVariadic); err != nil {
 				if tt.err == nil {
 					t.Fatalf("Got an error, but did not expect one")
 				}

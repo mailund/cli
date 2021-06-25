@@ -329,3 +329,61 @@ func TestCommandPanic(t *testing.T) {
 		Init: func() interface{} { return new(Invalid) },
 	})
 }
+
+func TestPositionalArgsWithSubcommands(t *testing.T) {
+	type Args struct {
+		X string `pos:"x" descr:"an x that does x"`
+	}
+
+	subcmdCalled := false
+	cmdCalled := false
+	x := ""
+	subcmd := cli.NewCommand(
+		cli.CommandSpec{
+			Name:   "subcmd",
+			Action: func(_ interface{}) { subcmdCalled = true }})
+	cmd := cli.NewCommand(
+		cli.CommandSpec{
+			Name:        "cmd",
+			Subcommands: []*cli.Command{subcmd},
+
+			Init: func() interface{} { return new(Args) },
+			Action: func(a interface{}) {
+				cmdCalled = true
+				x = a.(*Args).X
+			}})
+
+	cmd.Run([]string{"foo", "subcmd"})
+
+	if !subcmdCalled {
+		t.Error("subcmd should have been called")
+	}
+
+	if !cmdCalled {
+		t.Error("cmd should have been called")
+	}
+
+	if x != "foo" {
+		t.Errorf("x was set to %s, we expected foo", x)
+	}
+}
+
+func TestVariadicArgsWithSubcommands(t *testing.T) {
+	type Args struct {
+		X []string `pos:"x" descr:"an x that does x"`
+	}
+
+	subcmd := cli.NewCommand(cli.CommandSpec{Name: "subcmd"})
+	_, err := cli.NewCommandError(
+		cli.CommandSpec{
+			Init:        func() interface{} { return new(Args) },
+			Subcommands: []*cli.Command{subcmd}})
+
+	if err == nil {
+		t.Fatal("Expected an error")
+	}
+
+	if err.Error() != "a command with subcommands cannot have variadic parameters" {
+		t.Errorf("Unexpected error message: '%s'\n", err.Error())
+	}
+}

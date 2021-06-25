@@ -141,11 +141,12 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		CommandSpec: spec,
 		flags:       flag.NewFlagSet(spec.Name, flag.ExitOnError),
 		params:      params.NewParamSet(spec.Name, flag.ExitOnError)}
+	allowVariadic := len(spec.Subcommands) == 0 // only allow variadics if we don't have subcommands
 
 	if spec.Init != nil {
 		cmd.argv = spec.Init()
 
-		if err := connectSpecsFlagsAndParams(cmd.flags, cmd.params, cmd.argv); err != nil {
+		if err := connectSpecsFlagsAndParams(cmd.flags, cmd.params, cmd.argv, allowVariadic); err != nil {
 			return nil, err
 		}
 	}

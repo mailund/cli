@@ -127,7 +127,7 @@ func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructFie
 	return nil
 }
 
-func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interface{}) error {
+func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interface{}, allowVariadic bool) error {
 	reflectVal := reflect.Indirect(reflect.ValueOf(argv))
 	reflectTyp := reflectVal.Type()
 	seenVariadic := false
@@ -144,6 +144,10 @@ func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interf
 
 		if name, isPos := tfield.Tag.Lookup("pos"); isPos {
 			if tfield.Type.Kind() == reflect.Slice {
+				if !allowVariadic {
+					return SpecErrorf("a command with subcommands cannot have variadic parameters")
+				}
+
 				if seenVariadic {
 					return SpecErrorf("a command spec cannot contain more than one variadic parameter")
 				}
