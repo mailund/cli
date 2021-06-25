@@ -27,7 +27,6 @@ where `cmd` is the command line tool, the first flags, `-x` and `-foo` are optio
 
 Go's `flag` package handles flags, and does it very well, but it doesn't handle arguments or subcommands. There are other packages that implement support for subcommands, but not any that I much liked, so I implemented this module to get something more to my taste.
 
-
 ## Commands
 
 Commands are created with the `NewCommand` function from a command specification. The specification provides information about the name of the command, documentation as two strings, a short used when listing subcommands and a long used when showing usage of a specific command.
@@ -82,7 +81,6 @@ The fields `X` and `Y` must be capitalised, because `cli` uses reflection to ana
 To set up arguments, you proved another function, `Init`. It should return an `interface{}`, and it is that `interface{}` that `cli` parses for tags and that it provides to `Action` when the command runs.
 
 We could set up our command for adding two numbers like this:
-
 
 ```go
 add := cli.NewCommand(
@@ -155,7 +153,6 @@ cmd := cli.NewCommand(
 		},
 	})
 ```
-
 
 Simply setting `argv.Round = true` before we return from `Init` will make `true` the default value for the flag.
 
