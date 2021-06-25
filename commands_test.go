@@ -2,7 +2,6 @@ package cli_test
 
 import (
 	"flag"
-	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -12,19 +11,38 @@ import (
 )
 
 func TestNewCommand(t *testing.T) {
-	cli.NewCommand("name", "short", "long",
-		func(cmd *cli.Command) func() { return func() {} })
+	_ = cli.NewCommand(cli.CommandSpec{
+		Name:  "name",
+		Short: "short",
+		Long:  "long",
+	})
 }
 
-func TestNewCommandUsage(t *testing.T) { //nolint:funlen // A test function can have as many statements as it likes
-	init := func(cmd *cli.Command) func() {
-		cmd.Flags.Bool("foo", false, "set foo")
-		cmd.Params.String("bar", "a bar")
-
-		return func() {}
+func TestNewCommandError(t *testing.T) {
+	type Invalid struct {
+		X complex128 `flag:"x"`
 	}
 
-	cmd := cli.NewCommand("name", "short", "long", init)
+	_, err := cli.NewCommandError(cli.CommandSpec{
+		Init: func() interface{} { return new(Invalid) },
+	})
+
+	if err == nil {
+		t.Errorf("Expected an error")
+	}
+}
+
+func TestNewCommandUsage(t *testing.T) { //nolint:funlen // Only too long because of usage strings
+	type argv struct {
+		Foo string `flag:"foo" descr:"set foo"`
+		Bar string `arg:"bar" descr:"a bar"`
+	}
+
+	cmd := cli.NewCommand(cli.CommandSpec{
+		Name:  "name",
+		Short: "short",
+		Long:  "long",
+		Init:  func() interface{} { return new(argv) }})
 
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
@@ -38,7 +56,7 @@ long
 	
 Options:
   -foo
-	set foo
+	string set foo
   -help
 	show help for name
 	
@@ -55,7 +73,10 @@ Arguments:
 		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
 	}
 
-	cmd = cli.NewCommand("name", "short", "", init)
+	cmd = cli.NewCommand(cli.CommandSpec{
+		Name:  "name",
+		Short: "short",
+		Init:  func() interface{} { return new(argv) }})
 
 	builder = new(strings.Builder)
 	cmd.SetOutput(builder)
@@ -69,7 +90,7 @@ short
 	
 Options:
   -foo
-	set foo
+	string set foo
   -help
 	show help for name
 	
@@ -88,8 +109,9 @@ Arguments:
 
 func TestCommandCalled(t *testing.T) {
 	called := false
-	init := func(cmd *cli.Command) func() { return func() { called = true } }
-	cmd := cli.NewCommand("", "", "", init)
+	cmd := cli.NewCommand(cli.CommandSpec{
+		Action: func(argv interface{}) { called = true },
+	})
 	cmd.Run([]string{})
 
 	if !called {
@@ -99,13 +121,21 @@ func TestCommandCalled(t *testing.T) {
 
 func TestOption(t *testing.T) {
 	called := false
-	argX := -1
-	init := func(cmd *cli.Command) func() {
-		x := cmd.Flags.Int("x", 42, "an integer")
-		return func() { called = true; argX = *x }
+
+	type argv struct {
+		X int `flag:"x"`
 	}
-	cmd := cli.NewCommand("foo", "does foo", "a really good foo", init)
-	cmd.Flags.Init("foo", flag.ContinueOnError) // so we don't terminate
+
+	var parsed argv
+
+	init := func() interface{} { return &parsed }
+	cmd := cli.NewCommand(cli.CommandSpec{
+		Name:   "foo",
+		Short:  "does foo",
+		Long:   "a really good foo",
+		Init:   init,
+		Action: func(_ interface{}) { called = true }})
+	cmd.SetErrorFlag(flag.ContinueOnError)
 
 	// We won't call Failure() here, because the error is handled
 	// by flag.FlagSet(), but we get the error from it.
@@ -128,22 +158,39 @@ func TestOption(t *testing.T) {
 		t.Error("The command should be called now")
 	}
 
-	if argX != 42 {
+	if parsed.X != 42 {
 		t.Error("The option wasn't set correctly")
 	}
 }
 
 func TestParam(t *testing.T) {
+	type Testargs struct {
+		X int `arg:"x" descr:"an integer"`
+	}
+
+	argX := 0
 	failed := false
+	called := false
+	init := func() interface{} {
+		var a Testargs
+		a.X = 43
+
+		return &a
+	}
+	action := func(a interface{}) {
+		called = true
+		argX = a.(*Testargs).X
+	}
+
 	failure.Failure = func() { failed = true }
 
-	called := false
-	argX := -1
-	init := func(cmd *cli.Command) func() {
-		x := cmd.Params.Int("x", "an integer")
-		return func() { called = true; argX = *x }
-	}
-	cmd := cli.NewCommand("foo", "does foo", "a really good foo", init)
+	cmd := cli.NewCommand(cli.CommandSpec{
+		Name:   "foo",
+		Short:  "does foo",
+		Long:   "a really good foo",
+		Init:   init,
+		Action: action,
+	})
 
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
@@ -182,14 +229,14 @@ func TestParam(t *testing.T) {
 func makeMenu() (xCalled, yCalled *bool, cmd *cli.Command) {
 	xCalled, yCalled = new(bool), new(bool)
 
-	initFunc := func(b *bool) func(*cli.Command) func() {
-		return func(cmd *cli.Command) func() {
-			return func() { *b = true }
+	actionFunc := func(b *bool) func(argv interface{}) {
+		return func(argv interface{}) {
+			*b = true
 		}
 	}
 	cmd = cli.NewMenu("menu", "", "Dispatch to subcommands",
-		cli.NewCommand("x", "do x", "", initFunc(xCalled)),
-		cli.NewCommand("y", "do y", "", initFunc(yCalled)),
+		cli.NewCommand(cli.CommandSpec{Name: "x", Short: "do x", Action: actionFunc(xCalled)}),
+		cli.NewCommand(cli.CommandSpec{Name: "y", Short: "do y", Action: actionFunc(yCalled)}),
 	)
 
 	return xCalled, yCalled, cmd
@@ -236,8 +283,7 @@ func TestMenuUsage(t *testing.T) {
 
 	if !strings.HasSuffix(menuUsage, "Commands:\n  x\n\tdo x\n  y\n\tdo y\n\n") {
 		t.Error("Expected commands at the end of menu usage")
-		fmt.Println("The usage output was:")
-		fmt.Println(menuUsage)
+		t.Errorf("The usage output was: %s", menuUsage)
 	}
 }
 
@@ -248,6 +294,7 @@ func TestMenuFailure(t *testing.T) {
 
 	builder := new(strings.Builder)
 	menu.SetOutput(builder)
+	menu.SetErrorFlag(flag.ContinueOnError)
 	menu.Run([]string{"z"})
 
 	if !failed {
@@ -255,6 +302,14 @@ func TestMenuFailure(t *testing.T) {
 	}
 
 	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "'z' is not a valid command for menu.") {
+		t.Errorf("Expected different error message than %s\n", errmsg)
+	}
+
+	builder = new(strings.Builder)
+	menu.SetOutput(builder)
+	menu.Run([]string{"x", "-foo"})
+
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "flag provided but not defined: -foo") {
 		t.Errorf("Expected different error message than %s\n", errmsg)
 	}
 }

@@ -68,6 +68,11 @@ type ParamSet struct {
 	last *VariadicParam
 }
 
+// SetFlag sets the error handling flag.
+func (p *ParamSet) SetFlag(f ErrorHandling) {
+	p.ErrorFlag = f
+}
+
 // SetOutput specifies where usage output and error messages should
 // be written to.
 //

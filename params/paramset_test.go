@@ -101,7 +101,7 @@ func TestPrintDefault(t *testing.T) {
 	}
 }
 
-func TestPrintDefaultMore(t *testing.T) {
+func TestPrintDefaultVariadic(t *testing.T) {
 	builder := new(strings.Builder)
 	p := params.NewParamSet("test", params.ExitOnError)
 	p.SetOutput(builder)
@@ -128,7 +128,7 @@ func TestPrintDefaultMore(t *testing.T) {
 	}
 }
 
-func TestParseMore(t *testing.T) {
+func TestParseVariadic(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
 
 	p.String("x", "")
@@ -247,6 +247,34 @@ func TestFailureContinue(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ContinueOnError)
+
+	builder := new(strings.Builder)
+	p.SetOutput(builder)
+	p.String("x", "")
+
+	if err := p.Parse([]string{}); err == nil {
+		t.Fatalf("expected an error from the parse error")
+	}
+
+	if errmsg := builder.String(); errmsg != "" {
+		t.Fatalf("We shouldn't have an error message (but have %s)", errmsg)
+	}
+
+	if failed {
+		t.Fatal("We shouldn't terminate now")
+	}
+}
+
+func TestFailureSetFlag(t *testing.T) {
+	var failed = false
+
+	failure.Failure = func() { failed = true }
+
+	// create a paramset that will crash on errors
+	p := params.NewParamSet("test", params.ExitOnError)
+
+	// but then change the flag
+	p.SetFlag(params.ContinueOnError)
 
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
@@ -544,5 +572,50 @@ func TestVariadicFloats(t *testing.T) {
 
 	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as float.\n") {
 		t.Errorf("Unexpected error message: '%s'\n", errmsg)
+	}
+}
+
+func TestParamVariadic(t *testing.T) {
+	p := params.NewParamSet("p", params.ExitOnError)
+
+	_ = p.Int("i", "int")
+	_ = p.Bool("b", "bool")
+	_ = p.VariadicString("s", "strings", 0)
+
+	if p.NParams() != 2 {
+		t.Fatalf("Expected two paramteres, but paramset says there are %d", p.NParams())
+	}
+
+	first := p.Param(0)
+	second := p.Param(1)
+
+	if first.Name != "i" {
+		t.Error("first parameter name should be 'i'")
+	}
+
+	if first.Desc != "int" {
+		t.Error("first param descr should be 'int'")
+	}
+
+	if second.Name != "b" {
+		t.Error("second parameter name should be 'b'")
+	}
+
+	if second.Desc != "bool" {
+		t.Error("second param descr should be 'bool'")
+	}
+
+	if p.Variadic() == nil {
+		t.Fatal("Expected there to be a variadic argument")
+	}
+
+	variadic := p.Variadic()
+
+	if variadic.Name != "s" {
+		t.Error("variadic argument should be 's'")
+	}
+
+	if variadic.Desc != "strings" {
+		t.Error("variadic description should be 'strings'")
 	}
 }

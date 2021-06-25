@@ -410,7 +410,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := prepareSpecs(tt.args.f, tt.args.p, tt.args.argv); err != nil {
+			if err := connectSpecsFlagsAndParams(tt.args.f, tt.args.p, tt.args.argv); err != nil {
 				if tt.err == nil {
 					t.Fatalf("Got an error, but did not expect one")
 				}

@@ -56,8 +56,6 @@ func setFlag(f *flag.FlagSet, name string, tfield *reflect.StructField, vfield *
 	return nil
 }
 
-// TODO: connect specs with commands; no variadic for commands with subcommands
-
 func setParam(p *params.ParamSet, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
 	switch tfield.Type.Kind() {
 	case reflect.Bool:
@@ -122,7 +120,7 @@ func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructFie
 	return nil
 }
 
-func prepareSpecs(f *flag.FlagSet, p *params.ParamSet, argv interface{}) error {
+func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interface{}) error {
 	reflectVal := reflect.Indirect(reflect.ValueOf(argv))
 	reflectTyp := reflectVal.Type()
 	seenVariadic := false
@@ -156,3 +154,5 @@ func prepareSpecs(f *flag.FlagSet, p *params.ParamSet, argv interface{}) error {
 
 	return nil
 }
+
+// TODO: connect specs with commands; no variadic for commands with subcommands
