@@ -107,9 +107,7 @@ func ExampleCommand_fifth() {
 			Short: "adds floating point arguments",
 			Long:  "<long description of how addition works>",
 			Init: func() interface{} {
-				argv := new(NumArgs)
-				argv.Round = true
-				return argv
+				return &NumArgs{Round: true}
 			},
 			Action: func(args interface{}) {
 				argv, _ := args.(*NumArgs)

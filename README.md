@@ -144,9 +144,7 @@ cmd := cli.NewCommand(
   cli.CommandSpec{
     // The other arguments are the same as before…
     Init: func() interface{} {
-      argv := new(NumArgs)
-      argv.Round = true
-      return argv
+      return &NumArgs{Round: true}
     },
     Action: func(args interface{}) {
       // the Action function is the same as before
