@@ -2,11 +2,4 @@
 // arguments
 package vals
 
-type PosValue interface {
-	Set(string) error
-}
-
-type FlagValue interface {
-	String() string
-	Set(string) error
-}
+//go:generate sh -c "go run gen/genvals.go > genvals.go"
