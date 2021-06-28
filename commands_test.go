@@ -315,11 +315,7 @@ func TestMenuFailure(t *testing.T) {
 }
 
 func TestCommandPanic(t *testing.T) {
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("The code did not panic")
-		}
-	}()
+	defer func() { _ = recover() }()
 
 	type Invalid struct {
 		X complex128 `pos:"invalid type"`
@@ -328,6 +324,8 @@ func TestCommandPanic(t *testing.T) {
 	_ = cli.NewCommand(cli.CommandSpec{
 		Init: func() interface{} { return new(Invalid) },
 	})
+
+	t.Error("The code did not panic")
 }
 
 func TestPositionalArgsWithSubcommands(t *testing.T) {
