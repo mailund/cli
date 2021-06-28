@@ -3,7 +3,6 @@
 package vals
 
 import (
-	"fmt"
 	"reflect"
 
 	"github.com/mailund/cli/inter"
@@ -17,11 +16,26 @@ var ValsConstructors = map[reflect.Type]ValConstructor{}
 
 func AsValue(val reflect.Value) inter.FlagValue {
 	if cast, ok := val.Interface().(inter.FlagValue); ok {
-		fmt.Printf("[%q, %q] satisfy the interface\n", val, val.Type())
 		return cast
 	}
 
 	if cons, ok := ValsConstructors[val.Type()]; ok {
+		return cons(val)
+	}
+
+	return nil
+}
+
+type VarValConstructor func(reflect.Value) inter.VariadicValue
+
+var VarValsConstructors = map[reflect.Type]VarValConstructor{}
+
+func AsVariadicValue(val reflect.Value) inter.VariadicValue {
+	if cast, ok := val.Interface().(inter.VariadicValue); ok {
+		return cast
+	}
+
+	if cons, ok := VarValsConstructors[val.Type()]; ok {
 		return cons(val)
 	}
 

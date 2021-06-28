@@ -172,7 +172,7 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		}
 
 		cmd.params.Var((*vals.StringValue)(&cmd.command), "cmd", "sub-command to call")
-		cmd.params.VariadicStringVar(&cmd.cmdArgs, "...", "argument for sub-commands", 0)
+		cmd.params.VariadicVar((*vals.VariadicStringValue)(&cmd.cmdArgs), "...", "argument for sub-commands", 0)
 	}
 
 	return cmd, nil

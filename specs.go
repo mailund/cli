@@ -37,31 +37,15 @@ func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.Struct
 	return inter.SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
 }
 
-func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	if val := vals.AsValue(vfield.Addr()); val != nil {
-		cmd.params.Var(val, name, tfield.Tag.Get("descr"))
-		return nil
-	}
-	// FIXME: handle variadic
-
-	if tfield.Type.Kind() == reflect.Func {
-		if vfield.IsNil() {
-			return inter.SpecErrorf("callbacks cannot be nil")
-		}
-
-		if val := vals.AsCallback(vfield, argv); val != nil {
-			cmd.params.Var(val, name, tfield.Tag.Get("descr"))
-			return nil
-		}
-		// FIXME: handle variadic
-
-		return inter.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
+func setVariadic(cmd *Command, name string, val inter.VariadicValue, tfield *reflect.StructField) error {
+	if len(cmd.Subcommands) > 0 {
+		return inter.SpecErrorf("a command with subcommands cannot have variadic parameters")
 	}
 
-	return inter.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
-}
+	if cmd.params.Variadic() != nil {
+		return inter.SpecErrorf("a command spec cannot contain more than one variadic parameter")
+	}
 
-func setVariadicParam(cmd *Command, _ interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
 	var (
 		min int
 		err error
@@ -73,30 +57,44 @@ func setVariadicParam(cmd *Command, _ interface{}, name string, tfield *reflect.
 		return inter.SpecErrorf("unexpected min value for variadic parameter %s: %s", name, minTag)
 	}
 
-	switch tfield.Type.Elem().Kind() {
-	case reflect.Bool:
-		cmd.params.VariadicBoolVar(vfield.Addr().Interface().(*[]bool), name, tfield.Tag.Get("descr"), min)
-
-	case reflect.Int:
-		cmd.params.VariadicIntVar(vfield.Addr().Interface().(*[]int), name, tfield.Tag.Get("descr"), min)
-
-	case reflect.Float64:
-		cmd.params.VariadicFloatVar(vfield.Addr().Interface().(*[]float64), name, tfield.Tag.Get("descr"), min)
-
-	case reflect.String:
-		cmd.params.VariadicStringVar(vfield.Addr().Interface().(*[]string), name, tfield.Tag.Get("descr"), min)
-
-	default:
-		return inter.SpecErrorf("unsupported slice type for parameter %s: %q", name, tfield.Type.Elem().Kind())
-	}
+	cmd.params.VariadicVar(val, name, tfield.Tag.Get("descr"), min)
 
 	return nil
+}
+
+func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
+	if val := vals.AsValue(vfield.Addr()); val != nil {
+		cmd.params.Var(val, name, tfield.Tag.Get("descr"))
+		return nil
+	}
+
+	if val := vals.AsVariadicValue(vfield.Addr()); val != nil {
+		return setVariadic(cmd, name, val, tfield)
+	}
+
+	if tfield.Type.Kind() == reflect.Func {
+		if vfield.IsNil() {
+			return inter.SpecErrorf("callbacks cannot be nil")
+		}
+
+		if val := vals.AsCallback(vfield, argv); val != nil {
+			cmd.params.Var(val, name, tfield.Tag.Get("descr"))
+			return nil
+		}
+
+		if val := vals.AsVariadicCallback(vfield, argv); val != nil {
+			return setVariadic(cmd, name, val, tfield)
+		}
+
+		return inter.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
+	}
+
+	return inter.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
 }
 
 func connectSpecsFlagsAndParams(cmd *Command, argv interface{}) error {
 	reflectVal := reflect.Indirect(reflect.ValueOf(argv))
 	reflectTyp := reflectVal.Type()
-	seenVariadic := false
 
 	for i := 0; i < reflectTyp.NumField(); i++ {
 		tfield := reflectTyp.Field(i)
@@ -109,21 +107,7 @@ func connectSpecsFlagsAndParams(cmd *Command, argv interface{}) error {
 		}
 
 		if name, isPos := tfield.Tag.Lookup("pos"); isPos {
-			if tfield.Type.Kind() == reflect.Slice {
-				if len(cmd.Subcommands) > 0 {
-					return inter.SpecErrorf("a command with subcommands cannot have variadic parameters")
-				}
-
-				if seenVariadic {
-					return inter.SpecErrorf("a command spec cannot contain more than one variadic parameter")
-				}
-
-				seenVariadic = true
-
-				if err := setVariadicParam(cmd, argv, name, &tfield, &vfield); err != nil {
-					return err
-				}
-			} else if err := setParam(cmd, argv, name, &tfield, &vfield); err != nil {
+			if err := setParam(cmd, argv, name, &tfield, &vfield); err != nil {
 				return err
 			}
 		}

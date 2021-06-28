@@ -9,7 +9,6 @@ import (
 )
 
 type StringValue string
-type StringValueVariadic []string
 
 func (val *StringValue) Set(x string) error {
 	v, err := x, (error)(nil)
@@ -30,8 +29,28 @@ func StringValueConstructor(val reflect.Value) inter.FlagValue {
 	return (*StringValue)(val.Interface().(*string))
 }
 
+type VariadicStringValue []string
+
+func (vals *VariadicStringValue) Set(xs []string) error {
+	*vals = make([]string, len(xs))
+
+	for i, x := range xs {
+		val, err := x, (error)(nil)
+		if err != nil {
+			return inter.ParseErrorf("cannot parse '%s' as string", x)
+		}
+
+		(*vals)[i] = string(val)
+	}
+
+	return nil
+}
+
+func VariadicStringValueConstructor(val reflect.Value) inter.VariadicValue {
+	return (*VariadicStringValue)(val.Interface().(*[]string))
+}
+
 type BoolValue bool
-type BoolValueVariadic []bool
 
 func (val *BoolValue) Set(x string) error {
 	v, err := strconv.ParseBool(x)
@@ -52,8 +71,28 @@ func BoolValueConstructor(val reflect.Value) inter.FlagValue {
 	return (*BoolValue)(val.Interface().(*bool))
 }
 
+type VariadicBoolValue []bool
+
+func (vals *VariadicBoolValue) Set(xs []string) error {
+	*vals = make([]bool, len(xs))
+
+	for i, x := range xs {
+		val, err := strconv.ParseBool(x)
+		if err != nil {
+			return inter.ParseErrorf("cannot parse '%s' as bool", x)
+		}
+
+		(*vals)[i] = bool(val)
+	}
+
+	return nil
+}
+
+func VariadicBoolValueConstructor(val reflect.Value) inter.VariadicValue {
+	return (*VariadicBoolValue)(val.Interface().(*[]bool))
+}
+
 type IntValue int
-type IntValueVariadic []int
 
 func (val *IntValue) Set(x string) error {
 	v, err := strconv.ParseInt(x, 0, strconv.IntSize)
@@ -74,8 +113,28 @@ func IntValueConstructor(val reflect.Value) inter.FlagValue {
 	return (*IntValue)(val.Interface().(*int))
 }
 
+type VariadicIntValue []int
+
+func (vals *VariadicIntValue) Set(xs []string) error {
+	*vals = make([]int, len(xs))
+
+	for i, x := range xs {
+		val, err := strconv.ParseInt(x, 0, strconv.IntSize)
+		if err != nil {
+			return inter.ParseErrorf("cannot parse '%s' as int", x)
+		}
+
+		(*vals)[i] = int(val)
+	}
+
+	return nil
+}
+
+func VariadicIntValueConstructor(val reflect.Value) inter.VariadicValue {
+	return (*VariadicIntValue)(val.Interface().(*[]int))
+}
+
 type Float64Value float64
-type Float64ValueVariadic []float64
 
 func (val *Float64Value) Set(x string) error {
 	v, err := strconv.ParseFloat(x, 64)
@@ -96,9 +155,34 @@ func Float64ValueConstructor(val reflect.Value) inter.FlagValue {
 	return (*Float64Value)(val.Interface().(*float64))
 }
 
+type VariadicFloat64Value []float64
+
+func (vals *VariadicFloat64Value) Set(xs []string) error {
+	*vals = make([]float64, len(xs))
+
+	for i, x := range xs {
+		val, err := strconv.ParseFloat(x, 64)
+		if err != nil {
+			return inter.ParseErrorf("cannot parse '%s' as float64", x)
+		}
+
+		(*vals)[i] = float64(val)
+	}
+
+	return nil
+}
+
+func VariadicFloat64ValueConstructor(val reflect.Value) inter.VariadicValue {
+	return (*VariadicFloat64Value)(val.Interface().(*[]float64))
+}
+
 func init() {
 	ValsConstructors[reflect.TypeOf((*string)(nil))] = StringValueConstructor
+	VarValsConstructors[reflect.TypeOf((*[]string)(nil))] = VariadicStringValueConstructor
 	ValsConstructors[reflect.TypeOf((*bool)(nil))] = BoolValueConstructor
+	VarValsConstructors[reflect.TypeOf((*[]bool)(nil))] = VariadicBoolValueConstructor
 	ValsConstructors[reflect.TypeOf((*int)(nil))] = IntValueConstructor
+	VarValsConstructors[reflect.TypeOf((*[]int)(nil))] = VariadicIntValueConstructor
 	ValsConstructors[reflect.TypeOf((*float64)(nil))] = Float64ValueConstructor
+	VarValsConstructors[reflect.TypeOf((*[]float64)(nil))] = VariadicFloat64ValueConstructor
 }

@@ -70,6 +70,9 @@ func TestAsValue(t *testing.T) {
 		// implements the interface, so we should get it back unchanged
 		tv TestValue
 
+		// cannot be translated into a value
+		m map[int]int
+
 		val inter.FlagValue
 	)
 
@@ -92,5 +95,59 @@ func TestAsValue(t *testing.T) {
 	val = vals.AsValue(reflect.ValueOf(tv))
 	if val == nil || !reflect.DeepEqual(val, tv) {
 		t.Fatal("We should have gotten tv back unchanged")
+	}
+
+	val = vals.AsValue(reflect.ValueOf(&m))
+	if val != nil {
+		t.Fatal("The map should not be wrapped")
+	}
+}
+
+func TestVariadic(t *testing.T) {
+	ints := []int{}
+	vi := (*vals.VariadicIntValue)(&ints)
+
+	err := vi.Set([]string{"1", "2", "3"})
+	if err != nil {
+		t.Fatalf("Did not expect errors, but got %s", err.Error())
+	}
+
+	if len(*vi) != 3 {
+		t.Fatal("Expected *vi to have three values now")
+	}
+
+	for i := 0; i < 3; i++ {
+		if (*vi)[i] != i+1 {
+			t.Errorf("Unexpected (*vi)[%d] = %d", i+1, (*vi)[i])
+		}
+	}
+}
+
+func TestVariadic2(t *testing.T) {
+	ints := []int{}
+	vi := vals.VariadicIntValueConstructor(reflect.ValueOf(&ints))
+
+	if vi == nil {
+		t.Fatal("Wrapping created nil")
+	}
+
+	vii, ok := vi.(*vals.VariadicIntValue)
+	if !ok {
+		t.Fatal("We should be able to cast to *vals.VariadicIntValue")
+	}
+
+	err := vi.Set([]string{"1", "2", "3"})
+	if err != nil {
+		t.Fatalf("Did not expect errors, but got %s", err.Error())
+	}
+
+	if len(*vii) != 3 {
+		t.Fatal("Expected *vi to have three values now")
+	}
+
+	for i := 0; i < 3; i++ {
+		if (*vii)[i] != i+1 {
+			t.Errorf("Unexpected (*vi)[%d] = %d", i+1, (*vii)[i])
+		}
 	}
 }

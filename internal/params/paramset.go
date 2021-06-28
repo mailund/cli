@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/mailund/cli/inter"
@@ -55,8 +54,8 @@ type VariadicParam struct {
 	// Min is the minimum number of parameters that the variadic
 	// parameter takes.
 	Min int
-
-	parser func([]string) error
+	// Encapsulated value
+	Value inter.VariadicValue
 }
 
 // ParamSet contains a list of specified parameters for a
@@ -219,7 +218,7 @@ func (p *ParamSet) Parse(args []string) error {
 
 	if p.last != nil {
 		rest := args[len(p.params):]
-		if err := p.last.parser(rest); err != nil {
+		if err := p.last.Value.Set(rest); err != nil {
 			if p.ErrorFlag == ExitOnError {
 				fmt.Fprintf(p.Output(), "Error parsing parameters %s='%v', %s.\n",
 					p.last.Name, rest, err.Error())
@@ -243,201 +242,15 @@ func (p *ParamSet) Var(val inter.PosValue, name, desc string) {
 	p.params = append(p.params, &Param{name, desc, val})
 }
 
-func variadicStringParser(target *[]string) func([]string) error {
-	return func(args []string) error {
-		*target = args
-		return nil
-	}
-}
-
-func variadicBoolParser(target *[]bool) func([]string) error {
-	return func(args []string) error {
-		res := make([]bool, len(args))
-
-		for i, x := range args {
-			val, err := strconv.ParseBool(x)
-			if err != nil {
-				return inter.ParseErrorf("cannot parse '%s' as boolean", x)
-			}
-
-			res[i] = val
-		}
-
-		*target = res
-
-		return nil
-	}
-}
-
-func variadicIntParser(target *[]int) func([]string) error {
-	return func(args []string) error {
-		res := make([]int, len(args))
-
-		for i, x := range args {
-			val, err := strconv.ParseInt(x, 0, 64) //nolint:gomnd // 64 bits is not magic
-			if err != nil {
-				return inter.ParseErrorf("cannot parse '%s' as integer", x)
-			}
-
-			res[i] = int(val)
-		}
-
-		*target = res
-
-		return nil
-	}
-}
-
-func variadicFloatParser(target *[]float64) func([]string) error {
-	return func(args []string) error {
-		res := make([]float64, len(args))
-
-		for i, x := range args {
-			val, err := strconv.ParseFloat(x, 64) //nolint:gomnd // 64 bits is not magic
-			if err != nil {
-				return inter.ParseErrorf("cannot parse '%s' as float", x)
-			}
-
-			res[i] = val
-		}
-
-		*target = res
-
-		return nil
-	}
-}
-
-// VariadicStringVar install a variadic string argument
+// VariadicVar install a variadic argument
 // as the last parameter(s) for the parameter set.
 //
 // Parameters:
-//   - target: Pointer to where the parsed arguments should be written.
+//   - val: A variable that will hold the parsed arguments.
 //   - name: Name of the argument, used when printing usage.
 //   - desc: Description of the argument. Used when printing usage.
 //   - min: The minimum number of arguments that the command line must
 //     have for this parameter.
-func (p *ParamSet) VariadicStringVar(target *[]string, name, desc string, min int) {
-	p.VariadicFunc(name, desc, min, variadicStringParser(target))
-}
-
-// VariadicString install a variadic string argument
-// as the last parameter(s) for the parameter set. It returns a pointer
-// to where the parsed values will go if parsing is succesfull.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicString(name, desc string, min int) *[]string {
-	var x = []string{}
-
-	p.VariadicStringVar(&x, name, desc, min)
-
-	return &x
-}
-
-// VariadicBoolVar install a variadic bool argument
-// as the last parameter(s) for the parameter set.
-//
-// Parameters:
-//   - target: Pointer to where the parsed arguments should be written.
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicBoolVar(target *[]bool, name, desc string, min int) {
-	p.VariadicFunc(name, desc, min, variadicBoolParser(target))
-}
-
-// VariadicBool install a variadic bool argument
-// as the last parameter(s) for the parameter set. It returns a pointer
-// to where the parsed values will go if parsing is succesfull.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicBool(name, desc string, min int) *[]bool {
-	var x = []bool{}
-
-	p.VariadicBoolVar(&x, name, desc, min)
-
-	return &x
-}
-
-// VariadicIntVar install a variadic int argument
-// as the last parameter(s) for the parameter set.
-//
-// Parameters:
-//   - target: Pointer to where the parsed arguments should be written.
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicIntVar(target *[]int, name, desc string, min int) {
-	p.VariadicFunc(name, desc, min, variadicIntParser(target))
-}
-
-// VariadicInt install a variadic int argument
-// as the last parameter(s) for the parameter set. It returns a pointer
-// to where the parsed values will go if parsing is succesfull.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicInt(name, desc string, min int) *[]int {
-	var x = []int{}
-
-	p.VariadicIntVar(&x, name, desc, min)
-
-	return &x
-}
-
-// VariadicFloatVar install a variadic float argument
-// as the last parameter(s) for the parameter set.
-//
-// Parameters:
-//   - target: Pointer to where the parsed arguments should be written.
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicFloatVar(target *[]float64, name, desc string, min int) {
-	p.VariadicFunc(name, desc, min, variadicFloatParser(target))
-}
-
-// VariadicFloat install a variadic float argument
-// as the last parameter(s) for the parameter set. It returns a pointer
-// to where the parsed values will go if parsing is succesfull.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-func (p *ParamSet) VariadicFloat(name, desc string, min int) *[]float64 {
-	var x = []float64{}
-
-	p.VariadicFloatVar(&x, name, desc, min)
-
-	return &x
-}
-
-// VariadicFunc install a variadic callback function
-// as the last parameter(s) for the parameter set. The callback will be
-// invoked when the parser reaches the end of the normal parameters.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - min: The minimum number of arguments that the command line must
-//     have for this parameter.
-//   - fn: Callback function invoked on the last arguments. If parsing is
-//     succesfull it should return nil, otherwise a non-nil error.
-func (p *ParamSet) VariadicFunc(name, desc string, min int, fn func([]string) error) {
-	p.last = &VariadicParam{Name: name, Desc: desc, Min: min, parser: fn}
+func (p *ParamSet) VariadicVar(val inter.VariadicValue, name, desc string, min int) {
+	p.last = &VariadicParam{Name: name, Desc: desc, Min: min, Value: val}
 }

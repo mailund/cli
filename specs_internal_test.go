@@ -284,18 +284,6 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		},
 
 		{
-			name: "Unsupported variadic parameter type",
-			args: args{
-				flag.NewFlagSet("test", flag.ExitOnError),
-				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					B []func(x, y int) int `pos:"b"`
-				}),
-				true,
-			},
-			err: inter.SpecErrorf(`unsupported slice type for parameter b: "func"`),
-		},
-		{
 			name: "More than one variadic",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
