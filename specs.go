@@ -1,84 +1,67 @@
 package cli
 
 import (
-	"flag"
 	"reflect"
 	"strconv"
 
 	"github.com/mailund/cli/inter"
-	"github.com/mailund/cli/internal/params"
+	"github.com/mailund/cli/internal/vals"
 )
 
-// FIXME: there must be a better way of getting the reflection type
-// of a function type...
-var uglyHack func(string) error // just a way to get the signature
-var callbackSignature = reflect.TypeOf(uglyHack)
+func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
+	// bool flags are handled differently from values, so we insert those explicitly as books...
+	if tfield.Type.Kind() == reflect.Bool {
+		cmd.flags.BoolVar(vfield.Addr().Interface().(*bool), name, vfield.Bool(), tfield.Tag.Get("descr"))
+		return nil
+	}
 
-func setFlag(f *flag.FlagSet, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	switch tfield.Type.Kind() {
-	case reflect.Bool:
-		f.BoolVar(vfield.Addr().Interface().(*bool), name, vfield.Bool(), tfield.Tag.Get("descr"))
+	// Otherwise, rely on our value wrappers...
+	if val := vals.AsValue(vfield.Addr()); val != nil {
+		cmd.flags.Var(val, name, tfield.Tag.Get("descr"))
+		return nil
+	}
 
-	case reflect.Int:
-		f.IntVar(vfield.Addr().Interface().(*int), name, int(vfield.Int()), tfield.Tag.Get("descr"))
-
-	case reflect.Float64:
-		f.Float64Var(vfield.Addr().Interface().(*float64), name, vfield.Float(), tfield.Tag.Get("descr"))
-
-	case reflect.String:
-		f.StringVar(vfield.Addr().Interface().(*string), name, vfield.String(), tfield.Tag.Get("descr"))
-
-	case reflect.Func:
-		if tfield.Type != callbackSignature {
-			return inter.SpecErrorf("callbacks must have signature func(string) error")
-		}
-
+	if tfield.Type.Kind() == reflect.Func {
 		if vfield.IsNil() {
 			return inter.SpecErrorf("callbacks cannot be nil")
 		}
 
-		f.Func(name, tfield.Tag.Get("descr"), vfield.Interface().(func(string) error))
-
-	default:
-		return inter.SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
-	}
-
-	return nil
-}
-
-func setParam(p *params.ParamSet, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	switch tfield.Type.Kind() {
-	case reflect.Bool:
-		p.BoolVar(vfield.Addr().Interface().(*bool), name, tfield.Tag.Get("descr"))
-
-	case reflect.Int:
-		p.IntVar(vfield.Addr().Interface().(*int), name, tfield.Tag.Get("descr"))
-
-	case reflect.Float64:
-		p.FloatVar(vfield.Addr().Interface().(*float64), name, tfield.Tag.Get("descr"))
-
-	case reflect.String:
-		p.StringVar(vfield.Addr().Interface().(*string), name, tfield.Tag.Get("descr"))
-
-	case reflect.Func:
-		if tfield.Type != callbackSignature {
-			return inter.SpecErrorf("callbacks must have signature func(string) error")
+		if val := vals.AsCallback(vfield, argv); val != nil {
+			cmd.flags.Var(val, name, tfield.Tag.Get("descr"))
+			return nil
 		}
 
+		return inter.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
+	}
+
+	return inter.SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
+}
+
+func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
+	if val := vals.AsValue(vfield.Addr()); val != nil {
+		cmd.params.Var(val, name, tfield.Tag.Get("descr"))
+		return nil
+	}
+	// FIXME: handle variadic
+
+	if tfield.Type.Kind() == reflect.Func {
 		if vfield.IsNil() {
 			return inter.SpecErrorf("callbacks cannot be nil")
 		}
 
-		p.Func(name, tfield.Tag.Get("descr"), vfield.Interface().(func(string) error))
+		if val := vals.AsCallback(vfield, argv); val != nil {
+			cmd.params.Var(val, name, tfield.Tag.Get("descr"))
+			return nil
+		}
+		// FIXME: handle variadic
 
-	default:
-		return inter.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
+		return inter.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
 	}
 
-	return nil
+	return inter.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
 }
 
-func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
+func setVariadicParam(cmd *Command, _ interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
 	var (
 		min int
 		err error
@@ -92,16 +75,16 @@ func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructFie
 
 	switch tfield.Type.Elem().Kind() {
 	case reflect.Bool:
-		p.VariadicBoolVar(vfield.Addr().Interface().(*[]bool), name, tfield.Tag.Get("descr"), min)
+		cmd.params.VariadicBoolVar(vfield.Addr().Interface().(*[]bool), name, tfield.Tag.Get("descr"), min)
 
 	case reflect.Int:
-		p.VariadicIntVar(vfield.Addr().Interface().(*[]int), name, tfield.Tag.Get("descr"), min)
+		cmd.params.VariadicIntVar(vfield.Addr().Interface().(*[]int), name, tfield.Tag.Get("descr"), min)
 
 	case reflect.Float64:
-		p.VariadicFloatVar(vfield.Addr().Interface().(*[]float64), name, tfield.Tag.Get("descr"), min)
+		cmd.params.VariadicFloatVar(vfield.Addr().Interface().(*[]float64), name, tfield.Tag.Get("descr"), min)
 
 	case reflect.String:
-		p.VariadicStringVar(vfield.Addr().Interface().(*[]string), name, tfield.Tag.Get("descr"), min)
+		cmd.params.VariadicStringVar(vfield.Addr().Interface().(*[]string), name, tfield.Tag.Get("descr"), min)
 
 	default:
 		return inter.SpecErrorf("unsupported slice type for parameter %s: %q", name, tfield.Type.Elem().Kind())
@@ -110,7 +93,7 @@ func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructFie
 	return nil
 }
 
-func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interface{}, allowVariadic bool) error {
+func connectSpecsFlagsAndParams(cmd *Command, argv interface{}) error {
 	reflectVal := reflect.Indirect(reflect.ValueOf(argv))
 	reflectTyp := reflectVal.Type()
 	seenVariadic := false
@@ -120,14 +103,14 @@ func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interf
 		vfield := reflectVal.Field(i)
 
 		if name, isFlag := tfield.Tag.Lookup("flag"); isFlag {
-			if err := setFlag(f, name, &tfield, &vfield); err != nil {
+			if err := setFlag(cmd, argv, name, &tfield, &vfield); err != nil {
 				return err
 			}
 		}
 
 		if name, isPos := tfield.Tag.Lookup("pos"); isPos {
 			if tfield.Type.Kind() == reflect.Slice {
-				if !allowVariadic {
+				if len(cmd.Subcommands) > 0 {
 					return inter.SpecErrorf("a command with subcommands cannot have variadic parameters")
 				}
 
@@ -137,10 +120,10 @@ func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interf
 
 				seenVariadic = true
 
-				if err := setVariadicParam(p, name, &tfield, &vfield); err != nil {
+				if err := setVariadicParam(cmd, argv, name, &tfield, &vfield); err != nil {
 					return err
 				}
-			} else if err := setParam(p, name, &tfield, &vfield); err != nil {
+			} else if err := setParam(cmd, argv, name, &tfield, &vfield); err != nil {
 				return err
 			}
 		}

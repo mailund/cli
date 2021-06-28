@@ -2,17 +2,19 @@
 package vals
 
 import (
+	"reflect"
 	"strconv"
 
-	"github.com/mailund/cli/internal/params"
+	"github.com/mailund/cli/inter"
 )
 
 type StringValue string
+type StringValueVariadic []string
 
 func (val *StringValue) Set(x string) error {
 	v, err := x, (error)(nil)
 	if err != nil {
-		err = params.ParseErrorf("argument \"%s\" cannot be parsed as string", x)
+		err = inter.ParseErrorf("argument \"%s\" cannot be parsed as string", x)
 	} else {
 		*val = StringValue(v)
 	}
@@ -21,15 +23,20 @@ func (val *StringValue) Set(x string) error {
 }
 
 func (val *StringValue) String() string {
-	return `"` + string(*val) + `"`
+	return string(*val)
+}
+
+func StringValueConstructor(val reflect.Value) inter.FlagValue {
+	return (*StringValue)(val.Interface().(*string))
 }
 
 type BoolValue bool
+type BoolValueVariadic []bool
 
 func (val *BoolValue) Set(x string) error {
 	v, err := strconv.ParseBool(x)
 	if err != nil {
-		err = params.ParseErrorf("argument \"%s\" cannot be parsed as bool", x)
+		err = inter.ParseErrorf("argument \"%s\" cannot be parsed as bool", x)
 	} else {
 		*val = BoolValue(v)
 	}
@@ -41,12 +48,17 @@ func (val *BoolValue) String() string {
 	return strconv.FormatBool(bool(*val))
 }
 
+func BoolValueConstructor(val reflect.Value) inter.FlagValue {
+	return (*BoolValue)(val.Interface().(*bool))
+}
+
 type IntValue int
+type IntValueVariadic []int
 
 func (val *IntValue) Set(x string) error {
 	v, err := strconv.ParseInt(x, 0, strconv.IntSize)
 	if err != nil {
-		err = params.ParseErrorf("argument \"%s\" cannot be parsed as int", x)
+		err = inter.ParseErrorf("argument \"%s\" cannot be parsed as int", x)
 	} else {
 		*val = IntValue(v)
 	}
@@ -58,12 +70,17 @@ func (val *IntValue) String() string {
 	return strconv.Itoa(int(*val))
 }
 
+func IntValueConstructor(val reflect.Value) inter.FlagValue {
+	return (*IntValue)(val.Interface().(*int))
+}
+
 type Float64Value float64
+type Float64ValueVariadic []float64
 
 func (val *Float64Value) Set(x string) error {
 	v, err := strconv.ParseFloat(x, 64)
 	if err != nil {
-		err = params.ParseErrorf("argument \"%s\" cannot be parsed as float64", x)
+		err = inter.ParseErrorf("argument \"%s\" cannot be parsed as float64", x)
 	} else {
 		*val = Float64Value(v)
 	}
@@ -73,4 +90,15 @@ func (val *Float64Value) Set(x string) error {
 
 func (val *Float64Value) String() string {
 	return strconv.FormatFloat(float64(*val), 'g', -1, 64)
+}
+
+func Float64ValueConstructor(val reflect.Value) inter.FlagValue {
+	return (*Float64Value)(val.Interface().(*float64))
+}
+
+func init() {
+	ValsConstructors[reflect.TypeOf((*string)(nil))] = StringValueConstructor
+	ValsConstructors[reflect.TypeOf((*bool)(nil))] = BoolValueConstructor
+	ValsConstructors[reflect.TypeOf((*int)(nil))] = IntValueConstructor
+	ValsConstructors[reflect.TypeOf((*float64)(nil))] = Float64ValueConstructor
 }

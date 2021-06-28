@@ -326,24 +326,32 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(int) error `flag:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(int) error `flag:"a"`
+					})
+					x.A = func(int) error { return nil }
+					return x
+				}(),
 				true,
 			},
-			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
 		},
 		{
 			name: "Flag callback wrong signature 2",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(string) `flag:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(string) `flag:"a"`
+					})
+					x.A = func(string) {}
+					return x
+				}(),
 				true,
 			},
-			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
 		},
 		{
 			name: "Flag callbacks non-nil",
@@ -387,24 +395,32 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(int) error `pos:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(int) error `pos:"a"`
+					})
+					x.A = func(int) error { return nil }
+					return x
+				}(),
 				true,
 			},
-			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
 		},
 		{
 			name: "Params callback wrong signature 2",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(string) `pos:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(string) `pos:"a"`
+					})
+					x.A = func(string) {}
+					return x
+				}(),
 				true,
 			},
-			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
 		},
 		{
 			name: "Param callbacks non-nil",
@@ -434,9 +450,10 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := connectSpecsFlagsAndParams(tt.args.f, tt.args.p, tt.args.argv, tt.args.allowVariadic); err != nil {
+			cmd := &Command{flags: tt.args.f, params: tt.args.p}
+			if err := connectSpecsFlagsAndParams(cmd, tt.args.argv); err != nil {
 				if tt.err == nil {
-					t.Fatalf("Got an error, but did not expect one")
+					t.Fatalf("Got an error, but did not expect one. Got: %s", err.Error())
 				}
 				// FIXME: This is a bit vulnerable. I'm checking the string in the errors. I should
 				// add parameters to the error type so I could check without expecting error messages

@@ -56,7 +56,7 @@ long
 	
 Options:
   -foo
-	string set foo
+	value set foo
   -help
 	show help for name
 	
@@ -90,7 +90,7 @@ short
 	
 Options:
   -foo
-	string set foo
+	value set foo
   -help
 	show help for name
 	
@@ -148,7 +148,7 @@ func TestOption(t *testing.T) {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: parse error`) {
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: argument "foo" cannot be parsed as int`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 

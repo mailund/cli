@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mailund/cli/inter"
 	"github.com/mailund/cli/internal/failure"
 )
 
@@ -41,8 +42,8 @@ type Param struct {
 	Name string
 	// Desc is a short description of the parameter
 	Desc string
-
-	parser func(string) error
+	// Encapsulated value
+	Value inter.PosValue
 }
 
 // VariadicParam holds information about a variadic argument.
@@ -189,7 +190,7 @@ func (p *ParamSet) Parse(args []string) error {
 			failure.Failure()
 		}
 
-		return ParseErrorf("too few arguments")
+		return inter.ParseErrorf("too few arguments")
 	}
 
 	if p.last == nil && len(args) > len(p.params) {
@@ -201,18 +202,18 @@ func (p *ParamSet) Parse(args []string) error {
 			failure.Failure()
 		}
 
-		return ParseErrorf("too many arguments")
+		return inter.ParseErrorf("too many arguments")
 	}
 
 	for i, par := range p.params {
-		if err := par.parser(args[i]); err != nil {
+		if err := par.Value.Set(args[i]); err != nil {
 			if p.ErrorFlag == flag.ExitOnError {
 				fmt.Fprintf(p.Output(), "Error parsing parameter %s='%s', %s.\n",
 					par.Name, args[i], err.Error())
 				failure.Failure()
 			}
 
-			return ParseErrorf("error parsing parameter %s='%s'", par.Name, args[i])
+			return inter.ParseErrorf("error parsing parameter %s='%s'", par.Name, args[i])
 		}
 	}
 
@@ -225,183 +226,21 @@ func (p *ParamSet) Parse(args []string) error {
 				failure.Failure()
 			}
 
-			return ParseErrorf("error parsing parameters %s='%v'", p.last.Name, rest)
+			return inter.ParseErrorf("error parsing parameters %s='%v'", p.last.Name, rest)
 		}
 	}
 
 	return nil
 }
 
-func stringParser(target *string) func(string) error {
-	return func(arg string) error {
-		*target = arg
-		return nil
-	}
-}
-
-func intParser(target *int) func(string) error {
-	return func(arg string) error {
-		val, err := strconv.ParseInt(arg, 0, 64) //nolint:gomnd // 64 bits is not magic
-		if err != nil {
-			return ParseErrorf("argument `%s` cannot be parsed as an integer", arg)
-		}
-
-		*target = int(val)
-
-		return nil
-	}
-}
-
-func boolParser(target *bool) func(string) error {
-	return func(arg string) error {
-		val, err := strconv.ParseBool(arg)
-		if err != nil {
-			return ParseErrorf("argument `%s` cannot be parsed as a bool", arg)
-		}
-
-		*target = val
-
-		return nil
-	}
-}
-
-func floatParser(target *float64) func(string) error {
-	return func(arg string) error {
-		val, err := strconv.ParseFloat(arg, 64) //nolint:gomnd // 64 bits is not magic
-		if err != nil {
-			return ParseErrorf("argument `%s` cannot be parsed as a float", arg)
-		}
-
-		*target = val
-
-		return nil
-	}
-}
-
-// StringVar appends a string argument to the set. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
+// Var adds a new PosValue variable to the parameter set.
 //
 // Parameters:
-//   - target: Pointer to where the parsed argument should be written.
+//   - val: a variable where the parsed argument should be written.
 //   - name: Name of the argument, used when printing usage.
 //   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) StringVar(target *string, name, desc string) {
-	p.Func(name, desc, stringParser(target))
-}
-
-// String appends a string argument to the set and returns
-// a pointer to the new variable's target. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) String(name, desc string) *string {
-	var x string
-
-	p.StringVar(&x, name, desc)
-
-	return &x
-}
-
-// IntVar appends an integer argument to the set. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - target: Pointer to where the parsed argument should be written.
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) IntVar(target *int, name, desc string) {
-	p.Func(name, desc, intParser(target))
-}
-
-// Int appends an integer argument to the set and returns
-// a pointer to the new variable's target. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) Int(name, desc string) *int {
-	var x int
-
-	p.IntVar(&x, name, desc)
-
-	return &x
-}
-
-// BoolVar appends a boolean argument to the set. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - target: Pointer to where the parsed argument should be written.
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) BoolVar(target *bool, name, desc string) {
-	p.Func(name, desc, boolParser(target))
-}
-
-// Bool appends a boolean argument to the set and returns
-// a pointer to the new variable's target. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) Bool(name, desc string) *bool {
-	var x bool
-
-	p.BoolVar(&x, name, desc)
-
-	return &x
-}
-
-// FloatVar appends a floating point argument to the set. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - target: Pointer to where the parsed argument should be written.
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) FloatVar(target *float64, name, desc string) {
-	p.Func(name, desc, floatParser(target))
-}
-
-// Float appends a floating point argument to the set and returns
-// a pointer to the new variable's target. If the
-// parameter set is parsed successfully, the parsed value for this
-// parameter will have been written to target.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) Float(name, desc string) *float64 {
-	var x float64
-
-	p.FloatVar(&x, name, desc)
-
-	return &x
-}
-
-// Func appends a callback function as an argument. When
-// the parameter set is parsed, this function will be called.
-// If the function returns nil, the parser assumes that all
-// went well; if it returns a non-nil error, it handles the
-// parsing as an error.
-//
-// Parameters:
-//   - name: Name of the argument, used when printing usage.
-//   - desc: Description of the argument. Used when printing usage.
-//   - fn: Callback function, invoked when the arguments are parsed.
-func (p *ParamSet) Func(name, desc string, fn func(string) error) {
-	p.params = append(p.params, &Param{name, desc, fn})
+func (p *ParamSet) Var(val inter.PosValue, name, desc string) {
+	p.params = append(p.params, &Param{name, desc, val})
 }
 
 func variadicStringParser(target *[]string) func([]string) error {
@@ -418,7 +257,7 @@ func variadicBoolParser(target *[]bool) func([]string) error {
 		for i, x := range args {
 			val, err := strconv.ParseBool(x)
 			if err != nil {
-				return ParseErrorf("cannot parse '%s' as boolean", x)
+				return inter.ParseErrorf("cannot parse '%s' as boolean", x)
 			}
 
 			res[i] = val
@@ -437,7 +276,7 @@ func variadicIntParser(target *[]int) func([]string) error {
 		for i, x := range args {
 			val, err := strconv.ParseInt(x, 0, 64) //nolint:gomnd // 64 bits is not magic
 			if err != nil {
-				return ParseErrorf("cannot parse '%s' as integer", x)
+				return inter.ParseErrorf("cannot parse '%s' as integer", x)
 			}
 
 			res[i] = int(val)
@@ -456,7 +295,7 @@ func variadicFloatParser(target *[]float64) func([]string) error {
 		for i, x := range args {
 			val, err := strconv.ParseFloat(x, 64) //nolint:gomnd // 64 bits is not magic
 			if err != nil {
-				return ParseErrorf("cannot parse '%s' as float", x)
+				return inter.ParseErrorf("cannot parse '%s' as float", x)
 			}
 
 			res[i] = val

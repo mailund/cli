@@ -8,6 +8,7 @@ import (
 
 	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/internal/params"
+	"github.com/mailund/cli/internal/vals"
 )
 
 func TestMakeParamSet(t *testing.T) {
@@ -23,13 +24,14 @@ func TestShortUsage(t *testing.T) {
 		t.Errorf(`Short usage of empty paramset should be ""`)
 	}
 
-	p.String("foo", "")
+	s := "foo"
+	p.Var((*vals.StringValue)(&s), "foo", "")
 
 	if p.ShortUsage() != "foo" {
 		t.Errorf(`Short usage of with one "foo" parameter should be "foo"`)
 	}
 
-	p.String("bar", "")
+	p.Var((*vals.StringValue)(&s), "bar", "")
 
 	if p.ShortUsage() != "foo bar" {
 		t.Errorf(`Short usage of with parameters "foo" and "bar" should be "foo bar"`)
@@ -45,12 +47,12 @@ func TestShortUsage(t *testing.T) {
 func TestStringParam(t *testing.T) {
 	var (
 		x string
-		y *string
+		y string
 	)
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	p.StringVar(&x, "x", "")
-	y = p.String("y", "")
+	p.Var((*vals.StringValue)(&x), "x", "")
+	p.Var((*vals.StringValue)(&y), "y", "")
 
 	_ = p.Parse([]string{"foo", "bar"})
 
@@ -58,8 +60,8 @@ func TestStringParam(t *testing.T) {
 		t.Errorf(`Expected var x to hold "foo"`)
 	}
 
-	if *y != "bar" {
-		t.Errorf(`Expected var *y to hold "bar"`)
+	if y != "bar" {
+		t.Errorf(`Expected var y to hold "bar"`)
 	}
 }
 
@@ -80,10 +82,10 @@ func TestPrintDefault(t *testing.T) {
 	builder = new(strings.Builder)
 	p.SetOutput(builder)
 
-	var x string
+	var x, y string
 
-	p.StringVar(&x, "x", "an x")
-	p.String("y", "a y")
+	p.Var((*vals.StringValue)(&x), "x", "an x")
+	p.Var((*vals.StringValue)(&y), "y", "a y")
 
 	p.PrintDefaults()
 
@@ -106,10 +108,10 @@ func TestPrintDefaultVariadic(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
 	p.SetOutput(builder)
 
-	var x string
+	var x, y vals.StringValue
 
-	p.StringVar(&x, "x", "an x")
-	p.String("y", "a y")
+	p.Var(&x, "x", "an x")
+	p.Var(&y, "y", "a y")
 	p.VariadicString("...", "arguments for ...", 0)
 	p.PrintDefaults()
 
@@ -131,7 +133,9 @@ func TestPrintDefaultVariadic(t *testing.T) {
 func TestParseVariadic(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
 
-	p.String("x", "")
+	var x vals.StringValue
+
+	p.Var(&x, "x", "")
 	rest := p.VariadicString("...", "arguments for ...", 0)
 
 	args := []string{"for x", "y", "z"}
@@ -144,8 +148,9 @@ func TestParseVariadic(t *testing.T) {
 
 func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as many statements as it likes
 	p := params.NewParamSet("test", params.ExitOnError)
+	x := vals.StringValue("")
 
-	p.String("x", "")
+	p.Var(&x, "x", "")
 
 	var failed = false
 
@@ -247,10 +252,11 @@ func TestFailureContinue(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ContinueOnError)
+	x := vals.StringValue("")
 
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
-	p.String("x", "")
+	p.Var(&x, "x", "")
 
 	if err := p.Parse([]string{}); err == nil {
 		t.Fatalf("expected an error from the parse error")
@@ -272,13 +278,14 @@ func TestFailureSetFlag(t *testing.T) {
 
 	// create a paramset that will crash on errors
 	p := params.NewParamSet("test", params.ExitOnError)
+	x := vals.StringValue("")
 
 	// but then change the flag
 	p.SetFlag(params.ContinueOnError)
 
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
-	p.String("x", "")
+	p.Var(&x, "x", "")
 
 	if err := p.Parse([]string{}); err == nil {
 		t.Fatalf("expected an error from the parse error")
@@ -307,7 +314,7 @@ func TestFuncCallback(t *testing.T) {
 		return nil
 	}
 
-	p.Func("foo", "", f)
+	p.Var(vals.FuncValue(f), "foo", "")
 
 	_ = p.Parse([]string{"arg"})
 
@@ -324,10 +331,12 @@ func TestFuncCallbackError(t *testing.T) {
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
 
-	p.Func("foo", "",
+	f := vals.FuncValue(
 		func(arg string) error {
 			return errors.New("foo failed to bar") //nolint:goerr113 // Testing error
 		})
+
+	p.Var(f, "foo", "")
 
 	if err := p.Parse([]string{"arg"}); err == nil {
 		t.Fatalf("Expected an error")
@@ -373,12 +382,13 @@ func TestInt(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	ip := p.Int("i", "int")
+	i := vals.IntValue(0)
+	p.Var(&i, "i", "int")
 
 	_ = p.Parse([]string{"42"})
 
-	if *ip != 42 {
-		t.Errorf("Parse error, ip is %d", *ip)
+	if i != 42 {
+		t.Errorf("Parse error, i is %d", i)
 	}
 
 	builder := new(strings.Builder)
@@ -402,30 +412,31 @@ func TestBool(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	bp := p.Bool("var", "")
+	b := vals.BoolValue(false)
+	p.Var(&b, "var", "")
 
 	_ = p.Parse([]string{"1"})
 
-	if !*bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if !b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	_ = p.Parse([]string{"0"})
 
-	if *bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	_ = p.Parse([]string{"false"})
 
-	if *bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	_ = p.Parse([]string{"true"})
 
-	if !*bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if !b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	builder := new(strings.Builder)
@@ -449,12 +460,13 @@ func TestFloat(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	x := p.Float("var", "")
+	x := vals.Float64Value(0.0)
+	p.Var(&x, "var", "")
 
 	_ = p.Parse([]string{"3.14"})
 
-	if *x != 3.14 {
-		t.Errorf("Parse error, x is %f", *x)
+	if x != 3.14 {
+		t.Errorf("Parse error, x is %f", x)
 	}
 
 	builder := new(strings.Builder)
@@ -475,14 +487,16 @@ func TestFloat(t *testing.T) {
 
 func TestVariadicStrings(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
-	x := p.String("x", "")
-	res := p.VariadicString("x [x...]", "", 0)
+	x := vals.StringValue("")
 	args := []string{"x", "y", "z"}
+
+	p.Var(&x, "x", "")
+	res := p.VariadicString("x [x...]", "", 0)
 
 	_ = p.Parse(args)
 
-	if *x != "x" {
-		t.Errorf("Argument x should be x, is %s", *x)
+	if x != "x" {
+		t.Errorf("Argument x should be x, is %s", x)
 	}
 
 	if !reflect.DeepEqual(args[1:], *res) {
@@ -578,8 +592,13 @@ func TestVariadicFloats(t *testing.T) {
 func TestParamVariadic(t *testing.T) {
 	p := params.NewParamSet("p", params.ExitOnError)
 
-	_ = p.Int("i", "int")
-	_ = p.Bool("b", "bool")
+	var (
+		i vals.IntValue
+		b vals.BoolValue
+	)
+
+	p.Var(&i, "i", "int")
+	p.Var(&b, "b", "bool")
 	_ = p.VariadicString("s", "strings", 0)
 
 	if p.NParams() != 2 {

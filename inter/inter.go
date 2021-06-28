@@ -7,6 +7,11 @@ type PosValue interface {
 	Set(string) error
 }
 
+// VariadicValue is the interface for variadic positional arguments
+type VariadicValue interface {
+	Set([]string) error
+}
+
 // FlagValue is the interface that flag arguments must implement
 type FlagValue interface {
 	String() string

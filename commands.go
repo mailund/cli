@@ -9,6 +9,7 @@ import (
 
 	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/internal/params"
+	"github.com/mailund/cli/internal/vals"
 )
 
 // CommandSpec defines a commandline command or subcommand
@@ -141,12 +142,11 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		CommandSpec: spec,
 		flags:       flag.NewFlagSet(spec.Name, flag.ExitOnError),
 		params:      params.NewParamSet(spec.Name, flag.ExitOnError)}
-	allowVariadic := len(spec.Subcommands) == 0 // only allow variadics if we don't have subcommands
 
 	if spec.Init != nil {
 		cmd.argv = spec.Init()
 
-		if err := connectSpecsFlagsAndParams(cmd.flags, cmd.params, cmd.argv, allowVariadic); err != nil {
+		if err := connectSpecsFlagsAndParams(cmd, cmd.argv); err != nil {
 			return nil, err
 		}
 	}
@@ -171,7 +171,7 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 			cmd.subcommands[sub.Name] = sub
 		}
 
-		cmd.params.StringVar(&cmd.command, "cmd", "sub-command to call")
+		cmd.params.Var((*vals.StringValue)(&cmd.command), "cmd", "sub-command to call")
 		cmd.params.VariadicStringVar(&cmd.cmdArgs, "...", "argument for sub-commands", 0)
 	}
 
