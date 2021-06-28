@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/mailund/cli/inter"
 	"github.com/mailund/cli/internal/params"
 )
 
@@ -210,7 +211,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf(`unsupported type for flag b: "slice"`),
+			err: inter.SpecErrorf(`unsupported type for flag b: "slice"`),
 		},
 		{
 			name: "Unsupported parameter type",
@@ -222,7 +223,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf(`unsupported type for parameter b: "complex128"`),
+			err: inter.SpecErrorf(`unsupported type for parameter b: "complex128"`),
 		},
 
 		{
@@ -279,7 +280,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
+			err: inter.SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
 		},
 
 		{
@@ -292,7 +293,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf(`unsupported slice type for parameter b: "func"`),
+			err: inter.SpecErrorf(`unsupported slice type for parameter b: "func"`),
 		},
 		{
 			name: "More than one variadic",
@@ -305,7 +306,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("a command spec cannot contain more than one variadic parameter"),
+			err: inter.SpecErrorf("a command spec cannot contain more than one variadic parameter"),
 		},
 
 		{
@@ -318,7 +319,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks cannot be nil"),
+			err: inter.SpecErrorf("callbacks cannot be nil"),
 		},
 		{
 			name: "Flag callback wrong signature 1",
@@ -330,7 +331,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
 		},
 		{
 			name: "Flag callback wrong signature 2",
@@ -342,7 +343,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
 		},
 		{
 			name: "Flag callbacks non-nil",
@@ -379,7 +380,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks cannot be nil"),
+			err: inter.SpecErrorf("callbacks cannot be nil"),
 		},
 		{
 			name: "Params callback wrong signature 1",
@@ -391,7 +392,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
 		},
 		{
 			name: "Params callback wrong signature 2",
@@ -403,7 +404,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: inter.SpecErrorf("callbacks must have signature func(string) error"),
 		},
 		{
 			name: "Param callbacks non-nil",

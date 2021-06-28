@@ -2,29 +2,12 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 	"reflect"
 	"strconv"
 
+	"github.com/mailund/cli/inter"
 	"github.com/mailund/cli/internal/params"
 )
-
-// SpecError is the error type returned if there are problems with a
-// specification
-type SpecError struct {
-	Message string
-}
-
-// SpecErrorf creates a SpecError from a format string and arguments
-func SpecErrorf(format string, args ...interface{}) *SpecError {
-	return &SpecError{fmt.Sprintf(format, args...)}
-}
-
-// Error returns a string representation of a SpecError, implementing
-// the error interface.
-func (err *SpecError) Error() string {
-	return err.Message
-}
 
 // FIXME: there must be a better way of getting the reflection type
 // of a function type...
@@ -47,17 +30,17 @@ func setFlag(f *flag.FlagSet, name string, tfield *reflect.StructField, vfield *
 
 	case reflect.Func:
 		if tfield.Type != callbackSignature {
-			return SpecErrorf("callbacks must have signature func(string) error")
+			return inter.SpecErrorf("callbacks must have signature func(string) error")
 		}
 
 		if vfield.IsNil() {
-			return SpecErrorf("callbacks cannot be nil")
+			return inter.SpecErrorf("callbacks cannot be nil")
 		}
 
 		f.Func(name, tfield.Tag.Get("descr"), vfield.Interface().(func(string) error))
 
 	default:
-		return SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
+		return inter.SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
 	}
 
 	return nil
@@ -79,17 +62,17 @@ func setParam(p *params.ParamSet, name string, tfield *reflect.StructField, vfie
 
 	case reflect.Func:
 		if tfield.Type != callbackSignature {
-			return SpecErrorf("callbacks must have signature func(string) error")
+			return inter.SpecErrorf("callbacks must have signature func(string) error")
 		}
 
 		if vfield.IsNil() {
-			return SpecErrorf("callbacks cannot be nil")
+			return inter.SpecErrorf("callbacks cannot be nil")
 		}
 
 		p.Func(name, tfield.Tag.Get("descr"), vfield.Interface().(func(string) error))
 
 	default:
-		return SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
+		return inter.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
 	}
 
 	return nil
@@ -104,7 +87,7 @@ func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructFie
 	if minTag := tfield.Tag.Get("min"); minTag == "" {
 		min = 0
 	} else if min, err = strconv.Atoi(tfield.Tag.Get("min")); err != nil {
-		return SpecErrorf("unexpected min value for variadic parameter %s: %s", name, minTag)
+		return inter.SpecErrorf("unexpected min value for variadic parameter %s: %s", name, minTag)
 	}
 
 	switch tfield.Type.Elem().Kind() {
@@ -121,7 +104,7 @@ func setVariadicParam(p *params.ParamSet, name string, tfield *reflect.StructFie
 		p.VariadicStringVar(vfield.Addr().Interface().(*[]string), name, tfield.Tag.Get("descr"), min)
 
 	default:
-		return SpecErrorf("unsupported slice type for parameter %s: %q", name, tfield.Type.Elem().Kind())
+		return inter.SpecErrorf("unsupported slice type for parameter %s: %q", name, tfield.Type.Elem().Kind())
 	}
 
 	return nil
@@ -145,11 +128,11 @@ func connectSpecsFlagsAndParams(f *flag.FlagSet, p *params.ParamSet, argv interf
 		if name, isPos := tfield.Tag.Lookup("pos"); isPos {
 			if tfield.Type.Kind() == reflect.Slice {
 				if !allowVariadic {
-					return SpecErrorf("a command with subcommands cannot have variadic parameters")
+					return inter.SpecErrorf("a command with subcommands cannot have variadic parameters")
 				}
 
 				if seenVariadic {
-					return SpecErrorf("a command spec cannot contain more than one variadic parameter")
+					return inter.SpecErrorf("a command spec cannot contain more than one variadic parameter")
 				}
 
 				seenVariadic = true
