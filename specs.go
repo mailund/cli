@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/mailund/cli/params"
+	"github.com/mailund/cli/internal/params"
 )
 
 // SpecError is the error type returned if there are problems with a

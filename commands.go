@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/mailund/cli/internal/failure"
-	"github.com/mailund/cli/params"
+	"github.com/mailund/cli/internal/params"
 )
 
 // CommandSpec defines a commandline command or subcommand

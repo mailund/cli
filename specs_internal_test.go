@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mailund/cli/params"
+	"github.com/mailund/cli/internal/params"
 )
 
 func checkFlags(t *testing.T, f *flag.FlagSet, argv interface{}) {
