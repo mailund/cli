@@ -23,7 +23,7 @@ func TestStringValue(t *testing.T) {
 	}
 
 	if val.String() != "foo" {
-		t.Error("Unexpected string value for val")
+		t.Errorf("Unexpected string value for val: %s", val.String())
 	}
 }
 
@@ -61,7 +61,7 @@ func TestBoolValue(t *testing.T) {
 	}
 
 	if val.String() != "true" {
-		t.Error("Unexpected string value for val")
+		t.Errorf("Unexpected string value for val: %s", val.String())
 	}
 
 	if err := val.Set("foo"); err == nil {
@@ -107,7 +107,7 @@ func TestIntValue(t *testing.T) {
 	}
 
 	if val.String() != "42" {
-		t.Error("Unexpected string value for val")
+		t.Errorf("Unexpected string value for val: %s", val.String())
 	}
 
 	if err := val.Set("foo"); err == nil {
@@ -125,11 +125,471 @@ func TestVariadicIntValue(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []int{ -1, 2, -3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestInt8Value(t *testing.T) {
+	var (
+		x     int8
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicInt8Value(t *testing.T) {
+	var (
+		x    []int8
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []int8{ -1, 2, -3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestInt16Value(t *testing.T) {
+	var (
+		x     int16
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicInt16Value(t *testing.T) {
+	var (
+		x    []int16
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []int16{ -1, 2, -3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestInt32Value(t *testing.T) {
+	var (
+		x     int32
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicInt32Value(t *testing.T) {
+	var (
+		x    []int32
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []int32{ -1, 2, -3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestInt64Value(t *testing.T) {
+	var (
+		x     int64
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicInt64Value(t *testing.T) {
+	var (
+		x    []int64
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []int64{ -1, 2, -3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestUintValue(t *testing.T) {
+	var (
+		x     uint
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("-1"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicUintValue(t *testing.T) {
+	var (
+		x    []uint
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
 	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
 
-	if !reflect.DeepEqual(x, []int{ 1, 2, 3 }) {
+	if !reflect.DeepEqual(x, []uint{ 1, 2, 3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "-1" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestUint8Value(t *testing.T) {
+	var (
+		x     uint8
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("-1"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicUint8Value(t *testing.T) {
+	var (
+		x    []uint8
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []uint8{ 1, 2, 3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "-1" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestUint16Value(t *testing.T) {
+	var (
+		x     uint16
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("-1"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicUint16Value(t *testing.T) {
+	var (
+		x    []uint16
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []uint16{ 1, 2, 3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "-1" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestUint32Value(t *testing.T) {
+	var (
+		x     uint32
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("-1"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicUint32Value(t *testing.T) {
+	var (
+		x    []uint32
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []uint32{ 1, 2, 3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "-1" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestUint64Value(t *testing.T) {
+	var (
+		x     uint64
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("42"); err != nil {
+		t.Error("error setting val to 42")
+	}
+
+	if val.String() != "42" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("-1"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicUint64Value(t *testing.T) {
+	var (
+		x    []uint64
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []uint64{ 1, 2, 3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "-1" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestFloat32Value(t *testing.T) {
+	var (
+		x     float32
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("3.14"); err != nil {
+		t.Error("error setting val to 3.14")
+	}
+
+	if val.String() != "3.14" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicFloat32Value(t *testing.T) {
+	var (
+		x    []float32
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "0.1", "0.2", "0.3" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []float32{ 0.1, 0.2, 0.3 }) {
 		t.Error("x holds the wrong value")
 	}
 
@@ -153,7 +613,7 @@ func TestFloat64Value(t *testing.T) {
 	}
 
 	if val.String() != "3.14" {
-		t.Error("Unexpected string value for val")
+		t.Errorf("Unexpected string value for val: %s", val.String())
 	}
 
 	if err := val.Set("foo"); err == nil {
@@ -176,6 +636,98 @@ func TestVariadicFloat64Value(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(x, []float64{ 0.1, 0.2, 0.3 }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestComplex64Value(t *testing.T) {
+	var (
+		x     complex64
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("(3.14+42i)"); err != nil {
+		t.Error("error setting val to (3.14+42i)")
+	}
+
+	if val.String() != "(3.14+42i)" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicComplex64Value(t *testing.T) {
+	var (
+		x    []complex64
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "0.1+0.2i", "0.2+0.3i", "0.3+0.4i" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []complex64{ 0.1+0.2i, 0.2+0.3i, 0.3+0.4i }) {
+		t.Error("x holds the wrong value")
+	}
+
+	if err := vv.Set([]string{ "foo" }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}
+}
+
+func TestComplex128Value(t *testing.T) {
+	var (
+		x     complex128
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("(3.14+42i)"); err != nil {
+		t.Error("error setting val to (3.14+42i)")
+	}
+
+	if val.String() != "(3.14+42i)" {
+		t.Errorf("Unexpected string value for val: %s", val.String())
+	}
+
+	if err := val.Set("foo"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}
+}
+
+func TestVariadicComplex128Value(t *testing.T) {
+	var (
+		x    []complex128
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ "0.1+0.2i", "0.2+0.3i", "0.3+0.4i" }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []complex128{ 0.1+0.2i, 0.2+0.3i, 0.3+0.4i }) {
 		t.Error("x holds the wrong value")
 	}
 

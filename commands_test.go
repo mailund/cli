@@ -20,7 +20,7 @@ func TestNewCommand(t *testing.T) {
 
 func TestNewCommandError(t *testing.T) {
 	type Invalid struct {
-		X complex128 `flag:"x"`
+		X uintptr `flag:"x"`
 	}
 
 	_, err := cli.NewCommandError(cli.CommandSpec{
@@ -318,7 +318,7 @@ func TestCommandPanic(t *testing.T) {
 	defer func() { _ = recover() }()
 
 	type Invalid struct {
-		X complex128 `pos:"invalid type"`
+		X uintptr `pos:"invalid type"`
 	}
 
 	_ = cli.NewCommand(cli.CommandSpec{

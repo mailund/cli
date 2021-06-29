@@ -219,11 +219,11 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					B complex128 `pos:"b"`
+					B uintptr `pos:"b"`
 				}),
 				true,
 			},
-			err: inter.SpecErrorf(`unsupported type for parameter b: "complex128"`),
+			err: inter.SpecErrorf(`unsupported type for parameter b: "uintptr"`),
 		},
 
 		{
