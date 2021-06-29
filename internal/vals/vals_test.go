@@ -81,32 +81,48 @@ func TestAsValue(t *testing.T) {
 		// cannot be translated into a value
 		m map[int]int
 
-		val interfaces.FlagValue
+		pval interfaces.PosValue
+		fval interfaces.FlagValue
 	)
 
-	val = vals.AsFlagValue(reflect.ValueOf(&i))
-	if val == nil {
+	pval = vals.AsPosValue(reflect.ValueOf(&i))
+	if pval == nil {
 		t.Fatal("We should have wrapped int")
 	}
 
-	if cast, ok := val.(*vals.IntValue); !ok {
+	fval = vals.AsFlagValue(reflect.ValueOf(&i))
+	if fval == nil {
+		t.Fatal("We should have wrapped int")
+	}
+
+	if cast, ok := fval.(*vals.IntValue); !ok {
 		t.Error("Unexpected type for wrapped integer")
 	} else if i != int(*cast) {
 		t.Error("Expected value and i to hold the same value")
 	}
 
-	val = vals.AsFlagValue(reflect.ValueOf(&iv))
-	if val == nil || !reflect.DeepEqual(val, &iv) {
+	fval = vals.AsFlagValue(reflect.ValueOf(&iv))
+	if fval == nil || !reflect.DeepEqual(fval, &iv) {
 		t.Fatal("As pointer receiver, iv should implement the interface")
 	}
 
-	val = vals.AsFlagValue(reflect.ValueOf(tv))
-	if val == nil || !reflect.DeepEqual(val, tv) {
+	fval = vals.AsFlagValue(reflect.ValueOf(tv))
+	if fval == nil || !reflect.DeepEqual(fval, tv) {
 		t.Fatal("We should have gotten tv back unchanged")
 	}
 
-	val = vals.AsFlagValue(reflect.ValueOf(&m))
-	if val != nil {
+	pval = vals.AsPosValue(reflect.ValueOf(tv))
+	if pval == nil || !reflect.DeepEqual(pval, tv) {
+		t.Fatal("We should have gotten tv back unchanged")
+	}
+
+	fval = vals.AsFlagValue(reflect.ValueOf(&m))
+	if fval != nil {
+		t.Fatal("The map should not be wrapped")
+	}
+
+	pval = vals.AsPosValue(reflect.ValueOf(&m))
+	if pval != nil {
 		t.Fatal("The map should not be wrapped")
 	}
 }
