@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/mailund/cli/internal/failure"
-	"github.com/mailund/cli/params"
+	"github.com/mailund/cli/internal/params"
+	"github.com/mailund/cli/internal/vals"
 )
 
 func TestMakeParamSet(t *testing.T) {
@@ -23,19 +24,22 @@ func TestShortUsage(t *testing.T) {
 		t.Errorf(`Short usage of empty paramset should be ""`)
 	}
 
-	p.String("foo", "")
+	s := "foo"
+	p.Var((*vals.StringValue)(&s), "foo", "")
 
 	if p.ShortUsage() != "foo" {
 		t.Errorf(`Short usage of with one "foo" parameter should be "foo"`)
 	}
 
-	p.String("bar", "")
+	p.Var((*vals.StringValue)(&s), "bar", "")
 
 	if p.ShortUsage() != "foo bar" {
 		t.Errorf(`Short usage of with parameters "foo" and "bar" should be "foo bar"`)
 	}
 
-	p.VariadicString("...", "", 0)
+	// just testing that I can get the vals.VariadicStringValue this way...
+	x := vals.AsVariadicValue(reflect.ValueOf(&([]string{})))
+	p.VariadicVar(x, "...", "", 0)
 
 	if p.ShortUsage() != "foo bar ..." {
 		t.Errorf(`Short usage of with parameters "foo", "bar" and moreshould be "foo bar ..."`)
@@ -45,12 +49,12 @@ func TestShortUsage(t *testing.T) {
 func TestStringParam(t *testing.T) {
 	var (
 		x string
-		y *string
+		y string
 	)
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	p.StringVar(&x, "x", "")
-	y = p.String("y", "")
+	p.Var((*vals.StringValue)(&x), "x", "")
+	p.Var((*vals.StringValue)(&y), "y", "")
 
 	_ = p.Parse([]string{"foo", "bar"})
 
@@ -58,8 +62,8 @@ func TestStringParam(t *testing.T) {
 		t.Errorf(`Expected var x to hold "foo"`)
 	}
 
-	if *y != "bar" {
-		t.Errorf(`Expected var *y to hold "bar"`)
+	if y != "bar" {
+		t.Errorf(`Expected var y to hold "bar"`)
 	}
 }
 
@@ -80,10 +84,10 @@ func TestPrintDefault(t *testing.T) {
 	builder = new(strings.Builder)
 	p.SetOutput(builder)
 
-	var x string
+	var x, y string
 
-	p.StringVar(&x, "x", "an x")
-	p.String("y", "a y")
+	p.Var((*vals.StringValue)(&x), "x", "an x")
+	p.Var((*vals.StringValue)(&y), "y", "a y")
 
 	p.PrintDefaults()
 
@@ -106,11 +110,14 @@ func TestPrintDefaultVariadic(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
 	p.SetOutput(builder)
 
-	var x string
+	var (
+		x, y vals.StringValue
+		z    = []string{}
+	)
 
-	p.StringVar(&x, "x", "an x")
-	p.String("y", "a y")
-	p.VariadicString("...", "arguments for ...", 0)
+	p.Var(&x, "x", "an x")
+	p.Var(&y, "y", "a y")
+	p.VariadicVar((*vals.VariadicStringValue)(&z), "...", "arguments for ...", 0)
 	p.PrintDefaults()
 
 	expected := `Arguments:
@@ -131,21 +138,27 @@ func TestPrintDefaultVariadic(t *testing.T) {
 func TestParseVariadic(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
 
-	p.String("x", "")
-	rest := p.VariadicString("...", "arguments for ...", 0)
+	var (
+		x    vals.StringValue
+		rest = []string{}
+	)
+
+	p.Var(&x, "x", "")
+	p.VariadicVar((*vals.VariadicStringValue)(&rest), "...", "arguments for ...", 0)
 
 	args := []string{"for x", "y", "z"}
 	_ = p.Parse(args)
 
-	if !reflect.DeepEqual(*rest, []string{"y", "z"}) {
+	if !reflect.DeepEqual(rest, []string{"y", "z"}) {
 		t.Fatalf("The parser ate more than it should!")
 	}
 }
 
 func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as many statements as it likes
 	p := params.NewParamSet("test", params.ExitOnError)
+	x := vals.StringValue("")
 
-	p.String("x", "")
+	p.Var(&x, "x", "")
 
 	var failed = false
 
@@ -194,7 +207,9 @@ func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as 
 	}
 
 	// Add a variadic that wants at least one argument
-	p.VariadicString("y", "", 1)
+	y := []string{}
+
+	p.VariadicVar((*vals.VariadicStringValue)(&y), "y", "", 1)
 
 	failed = false
 	builder = new(strings.Builder)
@@ -247,10 +262,11 @@ func TestFailureContinue(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ContinueOnError)
+	x := vals.StringValue("")
 
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
-	p.String("x", "")
+	p.Var(&x, "x", "")
 
 	if err := p.Parse([]string{}); err == nil {
 		t.Fatalf("expected an error from the parse error")
@@ -272,13 +288,14 @@ func TestFailureSetFlag(t *testing.T) {
 
 	// create a paramset that will crash on errors
 	p := params.NewParamSet("test", params.ExitOnError)
+	x := vals.StringValue("")
 
 	// but then change the flag
 	p.SetFlag(params.ContinueOnError)
 
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
-	p.String("x", "")
+	p.Var(&x, "x", "")
 
 	if err := p.Parse([]string{}); err == nil {
 		t.Fatalf("expected an error from the parse error")
@@ -307,7 +324,7 @@ func TestFuncCallback(t *testing.T) {
 		return nil
 	}
 
-	p.Func("foo", "", f)
+	p.Var(vals.FuncValue(f), "foo", "")
 
 	_ = p.Parse([]string{"arg"})
 
@@ -324,10 +341,12 @@ func TestFuncCallbackError(t *testing.T) {
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
 
-	p.Func("foo", "",
+	f := vals.FuncValue(
 		func(arg string) error {
 			return errors.New("foo failed to bar") //nolint:goerr113 // Testing error
 		})
+
+	p.Var(f, "foo", "")
 
 	if err := p.Parse([]string{"arg"}); err == nil {
 		t.Fatalf("Expected an error")
@@ -350,10 +369,14 @@ func TestVariadicFuncError(t *testing.T) {
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
 
-	p.VariadicFunc("foo", "", 0,
-		func(args []string) error {
+	var (
+		f = func(args []string) error {
 			return errors.New("foo failed to bar") //nolint:goerr113 // Testing error
-		})
+		}
+		vf = vals.VariadicFuncValue(f)
+	)
+
+	p.VariadicVar(vf, "foo", "", 0)
 
 	if err := p.Parse([]string{"arg"}); err == nil {
 		t.Fatalf("Expected an error")
@@ -373,12 +396,13 @@ func TestInt(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	ip := p.Int("i", "int")
+	i := vals.IntValue(0)
+	p.Var(&i, "i", "int")
 
 	_ = p.Parse([]string{"42"})
 
-	if *ip != 42 {
-		t.Errorf("Parse error, ip is %d", *ip)
+	if i != 42 {
+		t.Errorf("Parse error, i is %d", i)
 	}
 
 	builder := new(strings.Builder)
@@ -402,30 +426,31 @@ func TestBool(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	bp := p.Bool("var", "")
+	b := vals.BoolValue(false)
+	p.Var(&b, "var", "")
 
 	_ = p.Parse([]string{"1"})
 
-	if !*bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if !b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	_ = p.Parse([]string{"0"})
 
-	if *bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	_ = p.Parse([]string{"false"})
 
-	if *bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	_ = p.Parse([]string{"true"})
 
-	if !*bp {
-		t.Errorf("Parse error, val is %t", *bp)
+	if !b {
+		t.Errorf("Parse error, val is %t", b)
 	}
 
 	builder := new(strings.Builder)
@@ -449,12 +474,13 @@ func TestFloat(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	p := params.NewParamSet("test", params.ExitOnError)
-	x := p.Float("var", "")
+	x := vals.Float64Value(0.0)
+	p.Var(&x, "var", "")
 
 	_ = p.Parse([]string{"3.14"})
 
-	if *x != 3.14 {
-		t.Errorf("Parse error, x is %f", *x)
+	if x != 3.14 {
+		t.Errorf("Parse error, x is %f", x)
 	}
 
 	builder := new(strings.Builder)
@@ -475,31 +501,37 @@ func TestFloat(t *testing.T) {
 
 func TestVariadicStrings(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
-	x := p.String("x", "")
-	res := p.VariadicString("x [x...]", "", 0)
+	x := vals.StringValue("")
 	args := []string{"x", "y", "z"}
+	res := []string{}
+
+	p.Var(&x, "x", "")
+	p.VariadicVar((*vals.VariadicStringValue)(&res), "x [x...]", "", 0)
 
 	_ = p.Parse(args)
 
-	if *x != "x" {
-		t.Errorf("Argument x should be x, is %s", *x)
+	if x != "x" {
+		t.Errorf("Argument x should be x, is %s", x)
 	}
 
-	if !reflect.DeepEqual(args[1:], *res) {
-		t.Errorf("Variadic argument got %v, expected [y, z]", *res)
+	if !reflect.DeepEqual(args[1:], res) {
+		t.Errorf("Variadic argument got %v, expected [y, z]", res)
 	}
 }
 
 func TestVariadicBools(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
-	res := p.VariadicBool("x [x...]", "", 0)
+	res := []bool{}
+
+	p.VariadicVar((*vals.VariadicBoolValue)(&res), "x [x...]", "", 0)
+
 	args := []string{"1", "true", "0", "false", "t", "FALSE"}
 	expected := []bool{true, true, false, false, true, false}
 
 	_ = p.Parse(args)
 
-	if !reflect.DeepEqual(*res, expected) {
-		t.Errorf("Variadic argument got %v, expected %v", *res, expected)
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("Variadic argument got %v, expected %v", res, expected)
 	}
 
 	// Testing errors
@@ -513,21 +545,24 @@ func TestVariadicBools(t *testing.T) {
 		t.Error("Expected a parser failure")
 	}
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as boolean.\n") {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as bool.\n") {
 		t.Errorf("Unexpected error message: '%s'\n", errmsg)
 	}
 }
 
 func TestVariadicInts(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
-	res := p.VariadicInt("x [x...]", "", 0)
+	res := []int{}
+
+	p.VariadicVar((*vals.VariadicIntValue)(&res), "x [x...]", "", 0)
+
 	args := []string{"1", "2", "3", "-4", "0x05", "6"}
 	expected := []int{1, 2, 3, -4, 5, 6}
 
 	_ = p.Parse(args)
 
-	if !reflect.DeepEqual(*res, expected) {
-		t.Errorf("Variadic argument got %v, expected %v", *res, expected)
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("Variadic argument got %v, expected %v", res, expected)
 	}
 
 	// Testing errors
@@ -542,21 +577,24 @@ func TestVariadicInts(t *testing.T) {
 		t.Error("Expected a parser failure")
 	}
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as integer.\n") {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as int.\n") {
 		t.Errorf("Unexpected error message: '%s'\n", errmsg)
 	}
 }
 
 func TestVariadicFloats(t *testing.T) {
 	p := params.NewParamSet("test", params.ExitOnError)
-	res := p.VariadicFloat("x [x...]", "", 0)
+	res := []float64{}
+
+	p.VariadicVar((*vals.VariadicFloat64Value)(&res), "x [x...]", "", 0)
+
 	args := []string{"1", "0.2", "3e4", "-4.1", "3.14"}
 	expected := []float64{1.0, 0.2, 3e4, -4.1, 3.14}
 
 	_ = p.Parse(args)
 
-	if !reflect.DeepEqual(*res, expected) {
-		t.Errorf("Variadic argument got %v, expected %v", *res, expected)
+	if !reflect.DeepEqual(res, expected) {
+		t.Errorf("Variadic argument got %v, expected %v", res, expected)
 	}
 
 	// Testing errors
@@ -570,7 +608,7 @@ func TestVariadicFloats(t *testing.T) {
 		t.Error("Expected a parser failure")
 	}
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as float.\n") {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as float64.\n") {
 		t.Errorf("Unexpected error message: '%s'\n", errmsg)
 	}
 }
@@ -578,9 +616,17 @@ func TestVariadicFloats(t *testing.T) {
 func TestParamVariadic(t *testing.T) {
 	p := params.NewParamSet("p", params.ExitOnError)
 
-	_ = p.Int("i", "int")
-	_ = p.Bool("b", "bool")
-	_ = p.VariadicString("s", "strings", 0)
+	var (
+		i vals.IntValue
+		b vals.BoolValue
+	)
+
+	p.Var(&i, "i", "int")
+	p.Var(&b, "b", "bool")
+
+	res := []string{}
+
+	p.VariadicVar((*vals.VariadicStringValue)(&res), "s", "strings", 0)
 
 	if p.NParams() != 2 {
 		t.Fatalf("Expected two paramteres, but paramset says there are %d", p.NParams())

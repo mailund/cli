@@ -7,7 +7,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mailund/cli/params"
+	"github.com/mailund/cli/interfaces"
+	"github.com/mailund/cli/internal/params"
 )
 
 func checkFlags(t *testing.T, f *flag.FlagSet, argv interface{}) {
@@ -210,7 +211,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf(`unsupported type for flag b: "slice"`),
+			err: interfaces.SpecErrorf(`unsupported type for flag b: "slice"`),
 		},
 		{
 			name: "Unsupported parameter type",
@@ -218,11 +219,11 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
 				new(struct {
-					B complex128 `pos:"b"`
+					B uintptr `pos:"b"`
 				}),
 				true,
 			},
-			err: SpecErrorf(`unsupported type for parameter b: "complex128"`),
+			err: interfaces.SpecErrorf(`unsupported type for parameter b: "uintptr"`),
 		},
 
 		{
@@ -279,21 +280,9 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
+			err: interfaces.SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
 		},
 
-		{
-			name: "Unsupported variadic parameter type",
-			args: args{
-				flag.NewFlagSet("test", flag.ExitOnError),
-				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					B []func(x, y int) int `pos:"b"`
-				}),
-				true,
-			},
-			err: SpecErrorf(`unsupported slice type for parameter b: "func"`),
-		},
 		{
 			name: "More than one variadic",
 			args: args{
@@ -305,7 +294,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("a command spec cannot contain more than one variadic parameter"),
+			err: interfaces.SpecErrorf("a command spec cannot contain more than one variadic parameter"),
 		},
 
 		{
@@ -318,31 +307,39 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks cannot be nil"),
+			err: interfaces.SpecErrorf("callbacks cannot be nil"),
 		},
 		{
 			name: "Flag callback wrong signature 1",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(int) error `flag:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(int) error `flag:"a"`
+					})
+					x.A = func(int) error { return nil }
+					return x
+				}(),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
 		},
 		{
 			name: "Flag callback wrong signature 2",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(string) `flag:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(string) `flag:"a"`
+					})
+					x.A = func(string) {}
+					return x
+				}(),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
 		},
 		{
 			name: "Flag callbacks non-nil",
@@ -379,31 +376,39 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: SpecErrorf("callbacks cannot be nil"),
+			err: interfaces.SpecErrorf("callbacks cannot be nil"),
 		},
 		{
 			name: "Params callback wrong signature 1",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(int) error `pos:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(int) error `pos:"a"`
+					})
+					x.A = func(int) error { return nil }
+					return x
+				}(),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
 		},
 		{
 			name: "Params callback wrong signature 2",
 			args: args{
 				flag.NewFlagSet("test", flag.ExitOnError),
 				params.NewParamSet("test", flag.ExitOnError),
-				new(struct {
-					A func(string) `pos:"a"`
-				}),
+				func() interface{} {
+					x := new(struct {
+						A func(string) `pos:"a"`
+					})
+					x.A = func(string) {}
+					return x
+				}(),
 				true,
 			},
-			err: SpecErrorf("callbacks must have signature func(string) error"),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
 		},
 		{
 			name: "Param callbacks non-nil",
@@ -433,9 +438,10 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := connectSpecsFlagsAndParams(tt.args.f, tt.args.p, tt.args.argv, tt.args.allowVariadic); err != nil {
+			cmd := &Command{flags: tt.args.f, params: tt.args.p}
+			if err := connectSpecsFlagsAndParams(cmd, tt.args.argv); err != nil {
 				if tt.err == nil {
-					t.Fatalf("Got an error, but did not expect one")
+					t.Fatalf("Got an error, but did not expect one. Got: %s", err.Error())
 				}
 				// FIXME: This is a bit vulnerable. I'm checking the string in the errors. I should
 				// add parameters to the error type so I could check without expecting error messages

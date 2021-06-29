@@ -1,11 +1,15 @@
-tests:
+build:
+	go generate ./...
+	go build
+
+tests: build
 	go test -v ./...
 
-lint:
+lint: build
 	golangci-lint run
 
-cover: 
+cover: build
 	go test ./... -coverprofile cover.out
 	go tool cover -func cover.out
 
-.phony: tests cover
+.phony: build tests lint cover

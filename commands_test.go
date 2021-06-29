@@ -2,6 +2,7 @@ package cli_test
 
 import (
 	"flag"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -20,7 +21,7 @@ func TestNewCommand(t *testing.T) {
 
 func TestNewCommandError(t *testing.T) {
 	type Invalid struct {
-		X complex128 `flag:"x"`
+		X uintptr `flag:"x"`
 	}
 
 	_, err := cli.NewCommandError(cli.CommandSpec{
@@ -56,7 +57,7 @@ long
 	
 Options:
   -foo
-	string set foo
+	value set foo
   -help
 	show help for name
 	
@@ -90,7 +91,7 @@ short
 	
 Options:
   -foo
-	string set foo
+	value set foo
   -help
 	show help for name
 	
@@ -148,7 +149,7 @@ func TestOption(t *testing.T) {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: parse error`) {
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: argument "foo" cannot be parsed as int`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 
@@ -318,7 +319,7 @@ func TestCommandPanic(t *testing.T) {
 	defer func() { _ = recover() }()
 
 	type Invalid struct {
-		X complex128 `pos:"invalid type"`
+		X uintptr `pos:"invalid type"`
 	}
 
 	_ = cli.NewCommand(cli.CommandSpec{
@@ -383,5 +384,60 @@ func TestVariadicArgsWithSubcommands(t *testing.T) {
 
 	if err.Error() != "a command with subcommands cannot have variadic parameters" {
 		t.Errorf("Unexpected error message: '%s'\n", err.Error())
+	}
+}
+
+type ValueInterface struct {
+	x string
+	i int
+}
+
+func (val *ValueInterface) Set(s string) error {
+	val.x = s
+	val.i = len(s)
+
+	return nil
+}
+
+func (val *ValueInterface) String() string {
+	return val.x
+}
+
+type VariadicValueInterface struct {
+	x []string
+	i int
+}
+
+func (val *VariadicValueInterface) Set(xs []string) error {
+	val.x = xs
+	val.i = len(xs)
+
+	return nil
+}
+
+func TestValueInterface(t *testing.T) {
+	var args = struct {
+		Flag ValueInterface         `flag:"value"`
+		Pos  ValueInterface         `pos:"value"`
+		Var  VariadicValueInterface `pos:"var"`
+	}{}
+
+	cmd := cli.NewCommand(
+		cli.CommandSpec{
+			Init: func() interface{} { return &args },
+		})
+
+	cmd.Run([]string{"--value=foobar", "qux", "the", "rest", "of", "the", "args"})
+
+	if args.Flag.x != "foobar" || args.Flag.i != 6 {
+		t.Error("The flag wasn't set correctly")
+	}
+
+	if args.Pos.x != "qux" || args.Pos.i != 3 {
+		t.Error("The positional wasn't set correctly")
+	}
+
+	if args.Var.i != 5 || !reflect.DeepEqual(args.Var.x, []string{"the", "rest", "of", "the", "args"}) {
+		t.Error("Variadic argument wasn't set correctly")
 	}
 }
