@@ -4,26 +4,19 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/mailund/cli/inter"
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/vals"
 )
 
 func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	// bool flags are handled differently from values, so we insert those explicitly as books...
-	if tfield.Type.Kind() == reflect.Bool {
-		cmd.flags.BoolVar(vfield.Addr().Interface().(*bool), name, vfield.Bool(), tfield.Tag.Get("descr"))
-		return nil
-	}
-
-	// Otherwise, rely on our value wrappers...
-	if val := vals.AsValue(vfield.Addr()); val != nil {
+	if val := vals.AsFlagValue(vfield.Addr()); val != nil {
 		cmd.flags.Var(val, name, tfield.Tag.Get("descr"))
 		return nil
 	}
 
 	if tfield.Type.Kind() == reflect.Func {
 		if vfield.IsNil() {
-			return inter.SpecErrorf("callbacks cannot be nil")
+			return interfaces.SpecErrorf("callbacks cannot be nil")
 		}
 
 		if val := vals.AsCallback(vfield, argv); val != nil {
@@ -31,19 +24,19 @@ func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.Struct
 			return nil
 		}
 
-		return inter.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
+		return interfaces.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
 	}
 
-	return inter.SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
+	return interfaces.SpecErrorf("unsupported type for flag %s: %q", name, tfield.Type.Kind())
 }
 
-func setVariadic(cmd *Command, name string, val inter.VariadicValue, tfield *reflect.StructField) error {
+func setVariadic(cmd *Command, name string, val interfaces.VariadicValue, tfield *reflect.StructField) error {
 	if len(cmd.Subcommands) > 0 {
-		return inter.SpecErrorf("a command with subcommands cannot have variadic parameters")
+		return interfaces.SpecErrorf("a command with subcommands cannot have variadic parameters")
 	}
 
 	if cmd.params.Variadic() != nil {
-		return inter.SpecErrorf("a command spec cannot contain more than one variadic parameter")
+		return interfaces.SpecErrorf("a command spec cannot contain more than one variadic parameter")
 	}
 
 	var (
@@ -54,7 +47,7 @@ func setVariadic(cmd *Command, name string, val inter.VariadicValue, tfield *ref
 	if minTag := tfield.Tag.Get("min"); minTag == "" {
 		min = 0
 	} else if min, err = strconv.Atoi(tfield.Tag.Get("min")); err != nil {
-		return inter.SpecErrorf("unexpected min value for variadic parameter %s: %s", name, minTag)
+		return interfaces.SpecErrorf("unexpected min value for variadic parameter %s: %s", name, minTag)
 	}
 
 	cmd.params.VariadicVar(val, name, tfield.Tag.Get("descr"), min)
@@ -63,7 +56,7 @@ func setVariadic(cmd *Command, name string, val inter.VariadicValue, tfield *ref
 }
 
 func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	if val := vals.AsValue(vfield.Addr()); val != nil {
+	if val := vals.AsPosValue(vfield.Addr()); val != nil {
 		cmd.params.Var(val, name, tfield.Tag.Get("descr"))
 		return nil
 	}
@@ -74,7 +67,7 @@ func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.Struc
 
 	if tfield.Type.Kind() == reflect.Func {
 		if vfield.IsNil() {
-			return inter.SpecErrorf("callbacks cannot be nil")
+			return interfaces.SpecErrorf("callbacks cannot be nil")
 		}
 
 		if val := vals.AsCallback(vfield, argv); val != nil {
@@ -86,10 +79,10 @@ func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.Struc
 			return setVariadic(cmd, name, val, tfield)
 		}
 
-		return inter.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
+		return interfaces.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
 	}
 
-	return inter.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
+	return interfaces.SpecErrorf("unsupported type for parameter %s: %q", name, tfield.Type.Kind())
 }
 
 func connectSpecsFlagsAndParams(cmd *Command, argv interface{}) error {

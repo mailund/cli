@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/mailund/cli/inter"
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/params"
 )
 
@@ -211,7 +211,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: inter.SpecErrorf(`unsupported type for flag b: "slice"`),
+			err: interfaces.SpecErrorf(`unsupported type for flag b: "slice"`),
 		},
 		{
 			name: "Unsupported parameter type",
@@ -223,7 +223,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: inter.SpecErrorf(`unsupported type for parameter b: "uintptr"`),
+			err: interfaces.SpecErrorf(`unsupported type for parameter b: "uintptr"`),
 		},
 
 		{
@@ -280,7 +280,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: inter.SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
+			err: interfaces.SpecErrorf(`unexpected min value for variadic parameter x: not an int`),
 		},
 
 		{
@@ -294,7 +294,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: inter.SpecErrorf("a command spec cannot contain more than one variadic parameter"),
+			err: interfaces.SpecErrorf("a command spec cannot contain more than one variadic parameter"),
 		},
 
 		{
@@ -307,7 +307,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: inter.SpecErrorf("callbacks cannot be nil"),
+			err: interfaces.SpecErrorf("callbacks cannot be nil"),
 		},
 		{
 			name: "Flag callback wrong signature 1",
@@ -323,7 +323,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}(),
 				true,
 			},
-			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
 		},
 		{
 			name: "Flag callback wrong signature 2",
@@ -339,7 +339,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}(),
 				true,
 			},
-			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
 		},
 		{
 			name: "Flag callbacks non-nil",
@@ -376,7 +376,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}),
 				true,
 			},
-			err: inter.SpecErrorf("callbacks cannot be nil"),
+			err: interfaces.SpecErrorf("callbacks cannot be nil"),
 		},
 		{
 			name: "Params callback wrong signature 1",
@@ -392,7 +392,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}(),
 				true,
 			},
-			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(int) error"`),
 		},
 		{
 			name: "Params callback wrong signature 2",
@@ -408,7 +408,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				}(),
 				true,
 			},
-			err: inter.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
+			err: interfaces.SpecErrorf(`incorrect signature for callbacks: "func(string)"`),
 		},
 		{
 			name: "Param callbacks non-nil",

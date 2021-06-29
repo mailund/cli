@@ -11,7 +11,7 @@ import (
 func TestStringValue(t *testing.T) {
 	var (
 		x     string
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -49,7 +49,7 @@ func TestVariadicStringValue(t *testing.T) {
 func TestBoolValue(t *testing.T) {
 	var (
 		x     bool
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -95,7 +95,7 @@ func TestVariadicBoolValue(t *testing.T) {
 func TestIntValue(t *testing.T) {
 	var (
 		x     int
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -141,7 +141,7 @@ func TestVariadicIntValue(t *testing.T) {
 func TestInt8Value(t *testing.T) {
 	var (
 		x     int8
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -187,7 +187,7 @@ func TestVariadicInt8Value(t *testing.T) {
 func TestInt16Value(t *testing.T) {
 	var (
 		x     int16
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -233,7 +233,7 @@ func TestVariadicInt16Value(t *testing.T) {
 func TestInt32Value(t *testing.T) {
 	var (
 		x     int32
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -279,7 +279,7 @@ func TestVariadicInt32Value(t *testing.T) {
 func TestInt64Value(t *testing.T) {
 	var (
 		x     int64
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -325,7 +325,7 @@ func TestVariadicInt64Value(t *testing.T) {
 func TestUintValue(t *testing.T) {
 	var (
 		x     uint
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -371,7 +371,7 @@ func TestVariadicUintValue(t *testing.T) {
 func TestUint8Value(t *testing.T) {
 	var (
 		x     uint8
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -417,7 +417,7 @@ func TestVariadicUint8Value(t *testing.T) {
 func TestUint16Value(t *testing.T) {
 	var (
 		x     uint16
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -463,7 +463,7 @@ func TestVariadicUint16Value(t *testing.T) {
 func TestUint32Value(t *testing.T) {
 	var (
 		x     uint32
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -509,7 +509,7 @@ func TestVariadicUint32Value(t *testing.T) {
 func TestUint64Value(t *testing.T) {
 	var (
 		x     uint64
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -555,7 +555,7 @@ func TestVariadicUint64Value(t *testing.T) {
 func TestFloat32Value(t *testing.T) {
 	var (
 		x     float32
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -601,7 +601,7 @@ func TestVariadicFloat32Value(t *testing.T) {
 func TestFloat64Value(t *testing.T) {
 	var (
 		x     float64
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -647,7 +647,7 @@ func TestVariadicFloat64Value(t *testing.T) {
 func TestComplex64Value(t *testing.T) {
 	var (
 		x     complex64
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -693,7 +693,7 @@ func TestVariadicComplex64Value(t *testing.T) {
 func TestComplex128Value(t *testing.T) {
 	var (
 		x     complex128
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {

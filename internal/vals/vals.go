@@ -5,17 +5,20 @@ package vals
 import (
 	"reflect"
 
-	"github.com/mailund/cli/inter"
+	"github.com/mailund/cli/interfaces"
 )
 
 //go:generate go run gen/genvals.go genvals
 
-type ValConstructor func(reflect.Value) inter.FlagValue
+// We explicitly write this method so boolean flags do not need arguments
+func (val *BoolValue) IsBoolFlag() bool { return true }
+
+type ValConstructor func(reflect.Value) interfaces.FlagValue
 
 var ValsConstructors = map[reflect.Type]ValConstructor{}
 
-func AsValue(val reflect.Value) inter.FlagValue {
-	if cast, ok := val.Interface().(inter.FlagValue); ok {
+func AsFlagValue(val reflect.Value) interfaces.FlagValue {
+	if cast, ok := val.Interface().(interfaces.FlagValue); ok {
 		return cast
 	}
 
@@ -26,12 +29,24 @@ func AsValue(val reflect.Value) inter.FlagValue {
 	return nil
 }
 
-type VarValConstructor func(reflect.Value) inter.VariadicValue
+func AsPosValue(val reflect.Value) interfaces.PosValue {
+	if cast, ok := val.Interface().(interfaces.PosValue); ok {
+		return cast
+	}
+
+	if cons, ok := ValsConstructors[val.Type()]; ok {
+		return cons(val)
+	}
+
+	return nil
+}
+
+type VarValConstructor func(reflect.Value) interfaces.VariadicValue
 
 var VarValsConstructors = map[reflect.Type]VarValConstructor{}
 
-func AsVariadicValue(val reflect.Value) inter.VariadicValue {
-	if cast, ok := val.Interface().(inter.VariadicValue); ok {
+func AsVariadicValue(val reflect.Value) interfaces.VariadicValue {
+	if cast, ok := val.Interface().(interfaces.VariadicValue); ok {
 		return cast
 	}
 

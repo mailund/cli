@@ -211,7 +211,7 @@ func (val *{{TypeName .TypeName}}) Set(x string) error {
 	{{if .CantFail}}*val = {{TypeName .TypeName}}({{.Parse}})
 	return nil{{else}}v, err := {{.Parse}}
 	if err != nil {
-		err = inter.ParseErrorf("argument \"%s\" cannot be parsed as {{.TypeName}}", x)
+		err = interfaces.ParseErrorf("argument \"%s\" cannot be parsed as {{.TypeName}}", x)
 	} else {
 		*val = {{TypeName .TypeName}}(v)
 	}
@@ -223,7 +223,7 @@ func (val *{{TypeName .TypeName}}) String() string {
 	return {{.Format}}
 }
 
-func {{TypeName .TypeName}}Constructor(val reflect.Value) inter.FlagValue {
+func {{TypeName .TypeName}}Constructor(val reflect.Value) interfaces.FlagValue {
 	return (*{{TypeName .TypeName}})(val.Interface().(*{{.TypeName}}))
 }
 
@@ -235,7 +235,7 @@ func (vals *{{VariadicTypeName .TypeName}}) Set(xs []string) error {
 	for i, x := range xs {
 		{{if .CantFail}}(*vals)[i] = {{.TypeName}}({{.Parse}}){{else}}val, err := {{.Parse}}
 		if err != nil {
-			return inter.ParseErrorf("cannot parse '%s' as {{.TypeName}}", x)
+			return interfaces.ParseErrorf("cannot parse '%s' as {{.TypeName}}", x)
 		}
 
 		(*vals)[i] = {{.TypeName}}(val){{end}}
@@ -244,7 +244,7 @@ func (vals *{{VariadicTypeName .TypeName}}) Set(xs []string) error {
 	return nil
 }
 
-func {{VariadicTypeName .TypeName}}Constructor(val reflect.Value) inter.VariadicValue {
+func {{VariadicTypeName .TypeName}}Constructor(val reflect.Value) interfaces.VariadicValue {
 	return (*{{VariadicTypeName .TypeName}})(val.Interface().(*[]{{.TypeName}}))
 }
 `
@@ -256,7 +256,7 @@ var testTemplate = `
 func Test{{TypeName .TypeName}}(t *testing.T) {
 	var (
 		x     {{.TypeName}}
-		val = vals.AsValue(reflect.ValueOf(&x))
+		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
 
 	if val == nil {
@@ -326,7 +326,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/mailund/cli/inter"
+	"github.com/mailund/cli/interfaces"
 )`)
 
 	for i := 0; i < len(valTypes); i++ {

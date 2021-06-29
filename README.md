@@ -65,7 +65,57 @@ cmd := cli.NewCommand(
 
 If you run this command, `cmd.Run([]string{})`, it will print “hello, world!”.
 
-The `interface{}` argument is where the action gets its arguments. To supply command arguments, you must define a type and one more function.
+If you want to make it a complete program, you just put the code in `main` and use `os.Args[1:]` as the arguments:
+
+```go
+package main
+
+import (
+  "fmt"
+  "os"
+
+  "github.com/mailund/cli"
+)
+
+func main() {
+  cmd := cli.NewCommand(
+    cli.CommandSpec{
+      Name:   "hello",
+      Long:   "Prints hello world",
+      Action: func(_ interface{}) { fmt.Println("hello, world!") },
+  })
+
+  cmd.Run(os.Args[1:])
+}
+```
+
+I changed the `Short` paramemter to `Long` here, since that is what `cli` uses to give full information about a command, rather than listing what subcommands do, but it wouldn't matter in this case. If `Long` isn't provided, it will use `Short`.
+
+If you run the program without any arguments, you get `"hello, world!"` back. Assuming you compiled the program into the executable `hello`, you get:
+
+```sh
+> hello
+hello, world!
+```
+
+If you call the program with the `-h` or `-help` flag, you get the following usage information:
+
+```sh
+> hello -h
+Usage: hello [options]
+
+Prints hello world
+
+Options:
+  -help
+    show help for hello
+```
+
+If you call it with an unkown option, so anything but the help flag, or with any arguments, you get an error message and the same usage information. As we have specified the command, it doesn't take any arguments, so `cli` consider it an error if it gets any.
+
+## Command arguments
+
+The `interface{}` argument to the `Action` is where the action gets its arguments. To supply command arguments, you must define a type and one more function.
 
 Let’s say we want a command that adds two numbers. For that, we need to arguments, and we will make them positional. We create a type for the arguments that looks like this:
 
@@ -154,6 +204,40 @@ cmd := cli.NewCommand(
 
 Simply setting `argv.Round = true` before we return from `Init` will make `true` the default value for the flag.
 
+You can use any of the types `string`, `bool`, `int`, `uint`, `int8`,  `int16`, `int32`, `int64`, `uint8`, `uint16`, `uint32`, `uint64`, `float32`, `float64`, `complex64` and `complex128` for flags and positional arguments. That's all the non-composite types except `uintptr` and unsafe pointers, which I wouldn't know how to handle generically...
+
+Slice types with the same underlying types will be consider variadic arguments, and you can use those for positional arguments as long as there is only one variadic parameter per command, and provided that the command does not have sub-commands (see below).
+
+Any type that implements the interface
+
+```go
+type PosValue interface {
+  Set(string) error
+}
+```
+
+for positional values or
+
+```go
+type FlagValue interface {
+  String() string
+  Set(string) error
+}
+```
+
+as pointer-receivers will also work. Types that implement
+
+```go
+type VariadicValue interface {
+	Set([]string) error
+}
+```
+
+can be used as variadic parameters.
+
+
+## Subcommands
+
 You can nest commands to make subcommands. Say we want a tool that can do both addition and multiplication. We can create a command with two subcommands to achieve this. The straightforward way to do this is to give a command a `Subcommands` in its specification. It can look like this:
 
 ```go
@@ -193,7 +277,107 @@ calc := cli.NewCommand(
   })
 ```
 
-Now `calc` has two subcommands, and you can invoke addition with `calc.Run([]string{"add", "2", "3"})` and multiplication with `calc.Run([]string{"must", "2", "3"})`. On the command line it would, of course, look like:
+Now `calc` has two subcommands, and you can invoke addition with `calc.Run([]string{"add", "2", "3"})` and multiplication with `calc.Run([]string{"must", "2", "3"})`.
+
+Turn it into a complete program:
+
+```go
+package main
+
+import (
+  "fmt"
+  "os"
+
+  "github.com/mailund/cli"
+)
+
+type CalcArgs struct {
+  X int `pos:"x" descr:"first addition argument"`
+  Y int `pos:"y" descr:"first addition argument"`
+}
+
+func main() {
+  add := cli.NewCommand(
+    cli.CommandSpec{
+      Name:  "add",
+      Short: "adds two floating point arguments",
+      Long:  "<long description of how addition works>",
+      Init:  func() interface{} { return new(CalcArgs) },
+      Action: func(args interface{}) {
+        fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+      },
+    })
+
+  mult := cli.NewCommand(
+    cli.CommandSpec{
+      Name:  "mult",
+      Short: "multiplies two floating point arguments",
+      Long:  "<long description of how multiplication works>",
+      Init:  func() interface{} { return new(CalcArgs) },
+      Action: func(args interface{}) {
+        fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+      },
+    })
+
+  calc := cli.NewCommand(
+    cli.CommandSpec{
+      Name:        "calc",
+      Short:       "does calculations",
+      Long:        "<long explanation of arithmetic>",
+      Subcommands: []*cli.Command{add, mult},
+    })
+
+  calc.Run(os.Args[1:])
+}
+```
+
+compile it into an executable called `calc`, and then on the command line you can get information about how to use it using the `-h` flag
+
+```sh
+> calc -h
+Usage: calc [options] cmd ...
+
+<long explanation of arithmetic>
+
+Options:
+  -help
+    show help for calc
+
+Arguments:
+  cmd
+	sub-command to call
+  ...
+	argument for sub-commands
+
+Commands:
+  add
+	adds two floating point arguments
+  mult
+	multiplies two floating point arguments
+```
+
+You get the long description (which doesn't say much here, admittedly), then the options and arguments, since the `calc` command has subcommands those are `cmd` and `...`, and a list of the subcommands with their short description.
+
+You can get help about the subcommands by providing those with the `-h` flag (or calling them incorrectly). To get help about `add`, we can use:
+
+```sh
+> calc add -h
+Usage: add [options] x y
+
+<long description of how addition works>
+
+Options:
+  -help
+    show help for add
+
+Arguments:
+  x
+	first addition argument
+  y
+	first addition argument
+```
+
+To invoke the commands, you do what experience has taught you and type the subcommand names after the main command:
 
 ```sh
 > calc add 2 3
@@ -271,3 +455,142 @@ menu/bar/y
 ```
 
 so it all works out.
+
+## Callbacks
+
+Instead of using parameters as values to set, you can install callback functions that will be called when the user provide a flag, or called on positional arguments. There are six types of functions you can use as callbacks, in different situations.
+
+```go
+type (
+  BCB  = func()
+  BCBI = func(interface{})
+
+  BCBE  = func() error
+  BCBIE = func(interface{}) error
+
+  CB  = func(string) error
+  CBI = func(string, interface{}) error
+
+  VCB  = func([]string) error
+  VCBI = func([]string, interface{}) error
+)
+```
+
+The first four, `BCB`, `BCBI`, `BCBE` and `BCBIE` are "boolean" callbacks, in the sense that they work like boolean flags. Those are command line flags that do not take any arguments, and they can only be used as flags. When they are, a flag, `-f` without arguments, will call the function. A `BCB` and `BCBE` flag will be called without arguments, of course, and a `BCBI` or `BCBIE` function will be called with the command line's argument structure, as returned from the `Init` function. The `-E` functions return an error and the other two do not. Callbacks that do not receive any input might not want to implement error handling, so `cli` support both boolean callbacks with and without an error return value. The functions that receive input should all return an `error` (although I might change that in the future).
+
+The `CB` and `CBI` functions work with both flags and positional arguments. For flats, `-f=arg` or `-f arg`, the `arg` string is passed as the first argument, and for positional arguments, whatever argument is on the command line will be the callback's argument. They differ only in the second argument to functions of type `CBI`, which will be the command's argument-struct when the function is called (so values set before the function is called can be found in the struct, but flags and positional arguments that come after will not have been set yet).
+
+The `VCB` and `VCBI` functions work the same as `CB` and `CBI` but take multiple arguments in the form of a string slice and can only be used for variadic parameters.
+
+The example below shows callbacks and `Value` interfaces in action. We define a type, `Validator` that holds a string that must be validated according to some rules that are quite simple in this example, but you might be able to imagine something more complex.
+
+We have two rules for validating the string in `Validator`, we might require that it is all uppercase or all lowercase, and we have functions to check this, and two methods for setting the rule. If we don't set a rule, then any string is valid.
+
+If we implement the `PosValue` interface mentioned above, i.e. we implement a `Set(string) error` method, then we can use a `Validator` a positional argument, so we do that.
+
+After that, we can make the type for command line arguments. We have a positional argument for the `Validator`, so it will get a positional argument, and we provide two flags to choose between the validation rules. If we don't provide a flag, we get the default (no checking), if we use `-u` we validate that the positional argument is all uppercase, and if we provide `-l` we validate that the argument is all lowercase.
+
+The two callbacks have signature `func()` (the `BCB` type above), so they are valid types for `cli`. We put the methods from the validator the arguments holds in the fields. When we write `args.Val.setUpperValidator` we have already bound the receiver, so the method becomes a function that doesn't take any arguments, and thus we can use it as the field in the structure.
+
+```go
+package main
+
+import (
+  "fmt"
+  "os"
+  "strings"
+
+  "github.com/mailund/cli"
+  "github.com/mailund/cli/interfaces"
+)
+
+type Validator struct {
+  validator func(string) bool
+  x         string
+}
+
+func upperValidator(x string) bool { return strings.ToUpper(x) == x }
+func lowerValidator(x string) bool { return strings.ToLower(x) == x }
+
+func (val *Validator) setUpperValidator() {
+  val.validator = upperValidator
+}
+
+func (val *Validator) setLowerValidator() {
+  val.validator = lowerValidator
+}
+
+// Implementing Set(string) error means we can use a Validator as a
+// positional argument
+func (val *Validator) Set(x string) error {
+  if val.validator != nil && !val.validator(x) {
+    return interfaces.ParseErrorf("'%s' is not a valid string", x)
+  }
+  val.x = x
+  return nil
+}
+
+type Args struct {
+  Upper func()    `flag:"u" descr:"sets the validator to upper"`
+  Lower func()    `flag:"l" descr:"sets the validator to lower"`
+  Val   Validator `pos:"string" descr:"string we might do something to, if valid"`
+}
+
+// Now we have everything ready to set up the command.
+func Init() interface{} {
+  args := Args{}
+  args.Upper = args.Val.setUpperValidator
+  args.Lower = args.Val.setLowerValidator
+  return &args
+}
+
+func Action(args interface{}) {
+  fmt.Println("A valid string:", args.(*Args).Val.x)
+}
+
+func main() {
+  cmd := cli.NewCommand(
+    cli.CommandSpec{
+      Name:   "validator",
+      Long:   "Will only accept valid strings",
+      Init:   Init,
+      Action: Action,
+    })
+  cmd.Run(os.Args[1:])
+}
+```
+
+Run it with `-h` to see a usage message:
+
+```sh
+> validate -h
+Usage: validator [options] string
+
+Will only accept valid strings
+
+Options:
+  -help show help for validator
+  -l	  sets the validator to lower
+  -u	  sets the validator to upper
+
+Arguments:
+  string
+	string we might do something to, if valid
+```
+
+Without any flags, the program will accept any string:
+
+```sh
+> validate Foo
+A valid string: Foo
+```
+
+but set a validator, and it will complain
+
+```sh
+validate -l Foo
+Error parsing parameter string='Foo', 'Foo' is not a valid string.
+
+> validate -l foo
+A valid string: foo
+```

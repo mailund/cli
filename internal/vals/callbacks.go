@@ -1,9 +1,18 @@
 package vals
 
-import "reflect"
+import (
+	"reflect"
+
+	"github.com/mailund/cli/interfaces"
+)
 
 // Function callbacks are special values; we don't need to generate them
 // since it is easier just to write the little code there is in the first place
+type FuncBoolValue func() error
+
+func (f FuncBoolValue) Set(_ string) error { return f() }
+func (f FuncBoolValue) String() string     { return "" }
+func (f FuncBoolValue) IsBoolFlag() bool   { return true }
 
 type FuncValue func(string) error
 
@@ -13,42 +22,70 @@ func (f FuncValue) String() string     { return "" }
 type VariadicFuncValue func([]string) error
 
 func (f VariadicFuncValue) Set(x []string) error { return f(x) }
-func (f VariadicFuncValue) String() string       { return "" }
 
 type (
+	BCB   = func()
+	BCBI  = func(interface{})
+	BCBE  = func() error
+	BCBIE = func(interface{}) error
+
 	CB  = func(string) error
 	CBI = func(string, interface{}) error
 
 	VCB  = func([]string) error
 	VCBI = func([]string, interface{}) error
 
-	CallbackWrapper         func(*reflect.Value, interface{}) FuncValue
-	VariadicCallbackWrapper func(*reflect.Value, interface{}) VariadicFuncValue
+	CallbackWrapper         func(*reflect.Value, interface{}) interfaces.FlagValue
+	VariadicCallbackWrapper func(*reflect.Value, interface{}) interfaces.VariadicValue
 )
 
-func CBConstructor(val *reflect.Value, i interface{}) FuncValue {
-	return FuncValue(val.Interface().(CB))
+func BCBConstructor(val *reflect.Value, i interface{}) interfaces.FlagValue {
+	f, _ := val.Interface().(BCB) // If we call this func, we know we have the right type
+	return FuncBoolValue(func() error { f(); return nil })
 }
 
-func CBIConstructor(val *reflect.Value, i interface{}) FuncValue {
-	return FuncValue(func(x string) error {
-		return val.Interface().(CBI)(x, i)
-	})
+func BCBIConstructor(val *reflect.Value, i interface{}) interfaces.FlagValue {
+	f, _ := val.Interface().(BCBI) // If we call this func, we know we have the right type
+	return FuncBoolValue(func() error { f(i); return nil })
 }
 
-func VCBConstructor(val *reflect.Value, i interface{}) VariadicFuncValue {
-	return VariadicFuncValue(val.Interface().(VCB))
+func BCBEConstructor(val *reflect.Value, i interface{}) interfaces.FlagValue {
+	f, _ := val.Interface().(BCBE) // If we call this func, we know we have the right type
+	return FuncBoolValue(f)
 }
 
-func VCBIConstructor(val *reflect.Value, i interface{}) VariadicFuncValue {
-	return VariadicFuncValue(func(x []string) error {
-		return val.Interface().(VCBI)(x, i)
-	})
+func BCBIEConstructor(val *reflect.Value, i interface{}) interfaces.FlagValue {
+	f, _ := val.Interface().(BCBIE) // If we call this func, we know we have the right type
+	return FuncBoolValue(func() error { return f(i) })
+}
+
+func CBConstructor(val *reflect.Value, i interface{}) interfaces.FlagValue {
+	f, _ := val.Interface().(CB) // If we call this func, we know we have the right type
+	return FuncValue(f)
+}
+
+func CBIConstructor(val *reflect.Value, i interface{}) interfaces.FlagValue {
+	f, _ := val.Interface().(CBI) // If we call this func, we know we have the right type
+	return FuncValue(func(x string) error { return f(x, i) })
+}
+
+func VCBConstructor(val *reflect.Value, i interface{}) interfaces.VariadicValue {
+	f, _ := val.Interface().(VCB) // If we call this func, we know we have the right type
+	return VariadicFuncValue(f)
+}
+
+func VCBIConstructor(val *reflect.Value, i interface{}) interfaces.VariadicValue {
+	f, _ := val.Interface().(VCBI) // If we call this func, we know we have the right type
+	return VariadicFuncValue(func(x []string) error { return f(x, i) })
 }
 
 var CallbackWrappers = map[reflect.Type]CallbackWrapper{
-	reflect.TypeOf(CB(nil)):  CBConstructor,
-	reflect.TypeOf(CBI(nil)): CBIConstructor,
+	reflect.TypeOf(BCB(nil)):   BCBConstructor,
+	reflect.TypeOf(BCBI(nil)):  BCBIConstructor,
+	reflect.TypeOf(BCBE(nil)):  BCBEConstructor,
+	reflect.TypeOf(BCBIE(nil)): BCBIEConstructor,
+	reflect.TypeOf(CB(nil)):    CBConstructor,
+	reflect.TypeOf(CBI(nil)):   CBIConstructor,
 }
 
 var VariadicCallbackWrappers = map[reflect.Type]VariadicCallbackWrapper{
@@ -56,7 +93,7 @@ var VariadicCallbackWrappers = map[reflect.Type]VariadicCallbackWrapper{
 	reflect.TypeOf(VCBI(nil)): VCBIConstructor,
 }
 
-func AsCallback(val *reflect.Value, i interface{}) FuncValue {
+func AsCallback(val *reflect.Value, i interface{}) interfaces.FlagValue {
 	if wrap, ok := CallbackWrappers[val.Type()]; ok {
 		return wrap(val, i)
 	}
@@ -64,7 +101,7 @@ func AsCallback(val *reflect.Value, i interface{}) FuncValue {
 	return nil // couldn't convert
 }
 
-func AsVariadicCallback(val *reflect.Value, i interface{}) VariadicFuncValue {
+func AsVariadicCallback(val *reflect.Value, i interface{}) interfaces.VariadicValue {
 	if wrap, ok := VariadicCallbackWrappers[val.Type()]; ok {
 		return wrap(val, i)
 	}

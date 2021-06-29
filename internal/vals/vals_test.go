@@ -6,12 +6,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mailund/cli/inter"
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/vals"
 )
 
 func simplifyUsage(x string) string {
 	return strings.Join(strings.Fields(strings.TrimSpace(x)), " ")
+}
+
+func TestBoolFlag(t *testing.T) {
+	var b vals.BoolValue
+
+	if !b.IsBoolFlag() {
+		t.Fatal("boolean values should work as boolean flags")
+	}
 }
 
 func TestValsFlags(t *testing.T) {
@@ -73,10 +81,10 @@ func TestAsValue(t *testing.T) {
 		// cannot be translated into a value
 		m map[int]int
 
-		val inter.FlagValue
+		val interfaces.FlagValue
 	)
 
-	val = vals.AsValue(reflect.ValueOf(&i))
+	val = vals.AsFlagValue(reflect.ValueOf(&i))
 	if val == nil {
 		t.Fatal("We should have wrapped int")
 	}
@@ -87,17 +95,17 @@ func TestAsValue(t *testing.T) {
 		t.Error("Expected value and i to hold the same value")
 	}
 
-	val = vals.AsValue(reflect.ValueOf(&iv))
+	val = vals.AsFlagValue(reflect.ValueOf(&iv))
 	if val == nil || !reflect.DeepEqual(val, &iv) {
 		t.Fatal("As pointer receiver, iv should implement the interface")
 	}
 
-	val = vals.AsValue(reflect.ValueOf(tv))
+	val = vals.AsFlagValue(reflect.ValueOf(tv))
 	if val == nil || !reflect.DeepEqual(val, tv) {
 		t.Fatal("We should have gotten tv back unchanged")
 	}
 
-	val = vals.AsValue(reflect.ValueOf(&m))
+	val = vals.AsFlagValue(reflect.ValueOf(&m))
 	if val != nil {
 		t.Fatal("The map should not be wrapped")
 	}
@@ -199,7 +207,7 @@ func TestAsVariadicValue(t *testing.T) {
 		// cannot be translated into a value
 		m map[int]int
 
-		val inter.VariadicValue
+		val interfaces.VariadicValue
 	)
 
 	val = vals.AsVariadicValue(reflect.ValueOf(&i))

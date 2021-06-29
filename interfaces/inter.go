@@ -1,6 +1,6 @@
-// inter implements public interfaces for functionality buried
+// interfaces implements public interfaces for functionality buried
 // deeper in the internal packages
-package inter
+package interfaces
 
 // PosValue is the interface that positional arguments must implement
 type PosValue interface {

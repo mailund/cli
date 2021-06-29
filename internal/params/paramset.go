@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mailund/cli/inter"
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/failure"
 )
 
@@ -42,7 +42,7 @@ type Param struct {
 	// Desc is a short description of the parameter
 	Desc string
 	// Encapsulated value
-	Value inter.PosValue
+	Value interfaces.PosValue
 }
 
 // VariadicParam holds information about a variadic argument.
@@ -55,7 +55,7 @@ type VariadicParam struct {
 	// parameter takes.
 	Min int
 	// Encapsulated value
-	Value inter.VariadicValue
+	Value interfaces.VariadicValue
 }
 
 // ParamSet contains a list of specified parameters for a
@@ -189,7 +189,7 @@ func (p *ParamSet) Parse(args []string) error {
 			failure.Failure()
 		}
 
-		return inter.ParseErrorf("too few arguments")
+		return interfaces.ParseErrorf("too few arguments")
 	}
 
 	if p.last == nil && len(args) > len(p.params) {
@@ -201,7 +201,7 @@ func (p *ParamSet) Parse(args []string) error {
 			failure.Failure()
 		}
 
-		return inter.ParseErrorf("too many arguments")
+		return interfaces.ParseErrorf("too many arguments")
 	}
 
 	for i, par := range p.params {
@@ -212,7 +212,7 @@ func (p *ParamSet) Parse(args []string) error {
 				failure.Failure()
 			}
 
-			return inter.ParseErrorf("error parsing parameter %s='%s'", par.Name, args[i])
+			return interfaces.ParseErrorf("error parsing parameter %s='%s'", par.Name, args[i])
 		}
 	}
 
@@ -225,7 +225,7 @@ func (p *ParamSet) Parse(args []string) error {
 				failure.Failure()
 			}
 
-			return inter.ParseErrorf("error parsing parameters %s='%v'", p.last.Name, rest)
+			return interfaces.ParseErrorf("error parsing parameters %s='%v'", p.last.Name, rest)
 		}
 	}
 
@@ -238,7 +238,7 @@ func (p *ParamSet) Parse(args []string) error {
 //   - val: a variable where the parsed argument should be written.
 //   - name: Name of the argument, used when printing usage.
 //   - desc: Description of the argument. Used when printing usage.
-func (p *ParamSet) Var(val inter.PosValue, name, desc string) {
+func (p *ParamSet) Var(val interfaces.PosValue, name, desc string) {
 	p.params = append(p.params, &Param{name, desc, val})
 }
 
@@ -251,6 +251,6 @@ func (p *ParamSet) Var(val inter.PosValue, name, desc string) {
 //   - desc: Description of the argument. Used when printing usage.
 //   - min: The minimum number of arguments that the command line must
 //     have for this parameter.
-func (p *ParamSet) VariadicVar(val inter.VariadicValue, name, desc string, min int) {
+func (p *ParamSet) VariadicVar(val interfaces.VariadicValue, name, desc string, min int) {
 	p.last = &VariadicParam{Name: name, Desc: desc, Min: min, Value: val}
 }
