@@ -7,18 +7,80 @@ import (
 	"text/template"
 )
 
+type typeSpec struct {
+	TypeName string
+	Parse    string
+	Format   string
+
+	SetInput     string
+	SetOutput    string
+	CantFail     bool
+	SetFailInput string
+
+	VarInput     string
+	VarOutput    string
+	VarFailInput string
+}
+
+var valTypes = []typeSpec{
+	{
+		TypeName:  "string",
+		Parse:     "x",
+		Format:    "string(*val)",
+		SetInput:  "foo",
+		SetOutput: "foo",
+		CantFail:  true,
+		VarInput:  `"foo", "bar", "baz"`,
+		VarOutput: `"foo", "bar", "baz"`,
+	},
+	{
+		TypeName:     "bool",
+		Parse:        "strconv.ParseBool(x)",
+		Format:       "strconv.FormatBool(bool(*val))",
+		SetInput:     "true",
+		SetOutput:    "true",
+		SetFailInput: "foo",
+		VarInput:     `"true", "false", "true"`,
+		VarOutput:    `true, false, true`,
+		VarFailInput: `"foo"`,
+	},
+	{
+		TypeName:     "int",
+		Parse:        "strconv.ParseInt(x, 0, strconv.IntSize)",
+		Format:       "strconv.Itoa(int(*val))",
+		SetInput:     "42",
+		SetOutput:    "42",
+		SetFailInput: "foo",
+		VarInput:     `"1", "2", "3"`,
+		VarOutput:    `1, 2, 3`,
+		VarFailInput: `"foo"`,
+	},
+	{
+		TypeName:     "float64",
+		Parse:        "strconv.ParseFloat(x, 64)",
+		Format:       "strconv.FormatFloat(float64(*val), 'g', -1, 64)",
+		SetInput:     "3.14",
+		SetOutput:    "3.14",
+		SetFailInput: "foo",
+		VarInput:     `"0.1", "0.2", "0.3"`,
+		VarOutput:    `0.1, 0.2, 0.3`,
+		VarFailInput: `"foo"`,
+	},
+}
+
 var valsTemplate = `
 type {{TypeName .TypeName}} {{.TypeName}}
 
 func (val *{{TypeName .TypeName}}) Set(x string) error {
-	v, err := {{.Parse}}
+	{{if .CantFail}}*val = {{TypeName .TypeName}}({{.Parse}})
+	return nil{{else}}v, err := {{.Parse}}
 	if err != nil {
 		err = inter.ParseErrorf("argument \"%s\" cannot be parsed as {{.TypeName}}", x)
 	} else {
 		*val = {{TypeName .TypeName}}(v)
 	}
 
-	return err
+	return err{{end}}
 }
 
 func (val *{{TypeName .TypeName}}) String() string {
@@ -35,12 +97,12 @@ func (vals *{{VariadicTypeName .TypeName}}) Set(xs []string) error {
 	*vals = make([]{{.TypeName}}, len(xs))
 
 	for i, x := range xs {
-		val, err := {{.Parse}}
+		{{if .CantFail}}(*vals)[i] = {{.TypeName}}({{.Parse}}){{else}}val, err := {{.Parse}}
 		if err != nil {
 			return inter.ParseErrorf("cannot parse '%s' as {{.TypeName}}", x)
 		}
 
-		(*vals)[i] = {{.TypeName}}(val)
+		(*vals)[i] = {{.TypeName}}(val){{end}}
 	}
 
 	return nil
@@ -54,40 +116,74 @@ func {{VariadicTypeName .TypeName}}Constructor(val reflect.Value) inter.Variadic
 var tableTemplate = "\tValsConstructors[reflect.TypeOf((*{{.TypeName}})(nil))] = {{TypeName .TypeName}}Constructor\n" +
 	"\tVarValsConstructors[reflect.TypeOf((*[]{{.TypeName}})(nil))] = {{VariadicTypeName .TypeName}}Constructor\n"
 
-type typeSpec struct {
-	TypeName string
-	Parse    string
-	Format   string
+var testTemplate = `
+func Test{{TypeName .TypeName}}(t *testing.T) {
+	var (
+		x     {{.TypeName}}
+		val = vals.AsValue(reflect.ValueOf(&x))
+	)
+
+	if val == nil {
+		t.Fatal("val should not be nil")
+	}
+
+	if err := val.Set("{{.SetInput}}"); err != nil {
+		t.Error("error setting val to {{.SetInput}}")
+	}
+
+	if val.String() != "{{.SetOutput}}" {
+		t.Error("Unexpected string value for val")
+	}{{ if (not .CantFail) }}
+
+	if err := val.Set("{{.SetFailInput}}"); err == nil {
+		t.Error("val.Set() should fail this time")
+	}{{end}}
 }
 
-var valTypes = []typeSpec{
-	{TypeName: "string",
-		Parse:  "x, (error)(nil)",
-		Format: "string(*val)"},
-	{TypeName: "bool",
-		Parse:  "strconv.ParseBool(x)",
-		Format: "strconv.FormatBool(bool(*val))"},
-	{TypeName: "int",
-		Parse:  "strconv.ParseInt(x, 0, strconv.IntSize)",
-		Format: "strconv.Itoa(int(*val))"},
-	{TypeName: "float64",
-		Parse:  "strconv.ParseFloat(x, 64)",
-		Format: "strconv.FormatFloat(float64(*val), 'g', -1, 64)"},
+func Test{{VariadicTypeName .TypeName}}(t *testing.T) {
+	var (
+		x    []{{.TypeName}}
+		vv = vals.AsVariadicValue(reflect.ValueOf(&x))
+	)
+
+	if vv == nil {
+		t.Fatal("vv should not be nil")
+	}
+
+	if err := vv.Set([]string{ {{.VarInput}} }); err != nil {
+		t.Error("vv.Set should not fail")
+	}
+
+	if !reflect.DeepEqual(x, []{{.TypeName}}{ {{.VarOutput}} }) {
+		t.Error("x holds the wrong value")
+	}{{ if (not .CantFail) }}
+
+	if err := vv.Set([]string{ {{.VarFailInput}} }); err == nil {
+		t.Error("vv.Set() should fail this time")
+	}{{end}}
 }
+`
 
-// I would love to pipe the result through gofmt and goimports,
-// but fucking go won't let me install goimports. Stupid stupid stupid go.
-func main() {
-	valsFuncs := template.Must(template.New("val").Funcs(template.FuncMap{
+var (
+	funcMap = template.FuncMap{
 		"TypeName":         func(name string) string { return strings.Title(name) + "Value" },
 		"VariadicTypeName": func(name string) string { return "Variadic" + strings.Title(name) + "Value" },
-	}).Parse(valsTemplate))
-	tableInit := template.Must(template.New("val").Funcs(template.FuncMap{
-		"TypeName":         func(name string) string { return strings.Title(name) + "Value" },
-		"VariadicTypeName": func(name string) string { return "Variadic" + strings.Title(name) + "Value" },
-	}).Parse(tableTemplate))
+	}
 
-	fmt.Println(`// Code generated by gen/genvals.go DO NOT EDIT.
+	valsFuncs = template.Must(template.New("val").Funcs(funcMap).Parse(valsTemplate))
+	tableInit = template.Must(template.New("val").Funcs(funcMap).Parse(tableTemplate))
+	tests     = template.Must(template.New("val").Funcs(funcMap).Parse(testTemplate))
+)
+
+func genvals(fname string) {
+	f, err := os.Create(fname)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
+	fmt.Fprintln(f, `// Code generated by gen/genvals.go DO NOT EDIT.
 package vals
 
 import (
@@ -97,15 +193,45 @@ import (
 	"github.com/mailund/cli/inter"
 )`)
 
-	for _, tspec := range valTypes {
-		_ = valsFuncs.Execute(os.Stdout, tspec)
+	for i := 0; i < len(valTypes); i++ {
+		_ = valsFuncs.Execute(f, valTypes[i])
 	}
 
-	fmt.Println("\nfunc init() {")
+	fmt.Fprintln(f, "\nfunc init() {")
 
-	for _, tspec := range valTypes {
-		_ = tableInit.Execute(os.Stdout, tspec)
+	for i := 0; i < len(valTypes); i++ {
+		_ = tableInit.Execute(f, valTypes[i])
 	}
 
-	fmt.Println("}")
+	fmt.Fprintln(f, "}")
+}
+
+func genvalsTest(fname string) {
+	f, err := os.Create(fname)
+	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
+	fmt.Fprintln(f, `// Code generated by gen/genvals.go DO NOT EDIT.
+package vals_test
+
+import (
+	"reflect"
+	"testing"
+
+	"github.com/mailund/cli/internal/vals"
+)`)
+
+	for i := 0; i < len(valTypes); i++ {
+		_ = tests.Execute(f, valTypes[i])
+	}
+}
+
+// I would love to pipe the result through gofmt and goimports,
+// but fucking go won't let me install goimports. Stupid stupid stupid go.
+func main() {
+	genvals(os.Args[1] + ".go")
+	genvalsTest(os.Args[1] + "_test.go")
 }

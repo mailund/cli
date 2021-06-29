@@ -8,7 +8,7 @@ import (
 	"github.com/mailund/cli/inter"
 )
 
-//go:generate sh -c "go run gen/genvals.go > genvals.go"
+//go:generate go run gen/genvals.go genvals
 
 type ValConstructor func(reflect.Value) inter.FlagValue
 
