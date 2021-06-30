@@ -173,11 +173,11 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		cmd.SetUsage(DefaultUsage(cmd))
 	}
 
-	hf := vals.FuncBoolValue(showHelp(spec.Usage))
+	hf := vals.FuncNoValue(showHelp(spec.Usage))
 
 	// There is always a help command when we parse, but the usage won't
 	// show it unless we make it explicit
-	_ = cmd.flags.Var(hf, "help", fmt.Sprintf("show help for %s", cmd.Name)) // cannot fail
+	_ = cmd.flags.Var(hf, "help", "h", fmt.Sprintf("show help for %s", cmd.Name)) // cannot fail
 
 	if len(cmd.Subcommands) > 0 {
 		cmd.subcommands = map[string]*Command{}
@@ -217,7 +217,7 @@ func DefaultUsage(cmd *Command) func() {
 			"Usage: %s [flags] %s\n\n",
 			cmd.Name, cmd.params.ShortUsage())
 
-		if len(cmd.Long) > 0 {
+		if cmd.Long != "" {
 			fmt.Fprintf(cmd.Output(), "%s\n\n", cmd.Long)
 		} else {
 			fmt.Fprintf(cmd.Output(), "%s\n\n", cmd.Short)

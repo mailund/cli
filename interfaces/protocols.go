@@ -18,11 +18,19 @@ type FlagValue interface {
 	Set(string) error // Should set the value from a string
 }
 
-// BoolFlag is used to indicate if a flag needs an argument. For boolean flags,
-// `--flag` can stand alone, but otherwise flags must have an argument as `--flag=arg`
-// or `--flag arg`
-type BoolFlag interface {
-	IsBoolFlag() bool // Should return true if the flag doesn't need an argument
+// NoValueFlag is used to indicate that a flag doesn't take any values, and
+// that it is an error to provide one. Their Set() method will be called with
+// the empty string instead.
+type NoValueFlag interface {
+	NoValueFlag() bool
+}
+
+// BoolFlag is used to indicate that a flag doesn't need a value, but can take one.
+// This differs from NoValueFlag where it is an error to provide one. With DefaultValueFlag,
+// the Default() function should return the string that Set() is called with if no value
+// is provided
+type DefaultValueFlag interface {
+	Default() string
 }
 
 // Validate is an interface that is run after parameters are initialised

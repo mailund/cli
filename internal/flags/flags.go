@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sort"
 	"strings"
 
 	"github.com/mailund/cli/interfaces"
@@ -13,7 +12,8 @@ import (
 
 // Flag is the data associated with a single flag.
 type Flag struct {
-	Name     string               // Name is the short name used for a parameter
+	Long     string               // Name is the long flag name
+	Short    string               // Short is the short flag
 	Desc     string               // Desc is a short description of the parameter
 	Value    interfaces.FlagValue // Encapsulated value
 	DefValue string               // Default value (as string)
@@ -24,8 +24,10 @@ type FlagSet struct {
 	Usage func() // Function for printing usage. Can be changed.
 	Name  string // Name of the flag set, usually the same as the command
 
-	flagsList     []*Flag
-	flagsMap      map[string]*Flag
+	flagsList []*Flag
+	longMap   map[string]*Flag
+	shortMap  map[string]*Flag
+
 	args          []string // arguments after flags
 	errorHandling failure.ErrorHandling
 	output        io.Writer
@@ -43,7 +45,11 @@ func (f *FlagSet) SetOutput(w io.Writer) {
 
 // Lookup gets a flag by name
 func (f *FlagSet) Lookup(name string) *Flag {
-	return f.flagsMap[name]
+	if f, ok := f.longMap[name]; ok {
+		return f
+	}
+
+	return f.shortMap[name]
 }
 
 // Output returns the output stream for the flag set.
@@ -58,7 +64,8 @@ func NewFlagSet(name string, errHandling failure.ErrorHandling) *FlagSet {
 		Name:          name,
 		errorHandling: errHandling,
 		flagsList:     []*Flag{},
-		flagsMap:      map[string]*Flag{},
+		shortMap:      map[string]*Flag{},
+		longMap:       map[string]*Flag{},
 		output:        os.Stderr,
 	}
 	f.Usage = f.PrintDefaults
@@ -67,15 +74,32 @@ func NewFlagSet(name string, errHandling failure.ErrorHandling) *FlagSet {
 }
 
 // Var inserts a new flag in the form of a value.
-func (f *FlagSet) Var(value interfaces.FlagValue, name, descr string) error {
-	if _, found := f.flagsMap[name]; found {
-		return interfaces.SpecErrorf("flag %s is defined more than once", name)
+func (f *FlagSet) Var(value interfaces.FlagValue, long, short, descr string) error {
+	if len(short) > 1 {
+		return interfaces.SpecErrorf("short arguments can only be one character: %s", short)
+	}
+
+	if _, found := f.longMap[long]; found {
+		return interfaces.SpecErrorf("flag %s is defined more than once", long)
+	}
+
+	if _, found := f.shortMap[short]; found {
+		return interfaces.SpecErrorf("flag %s is defined more than once", short)
 	}
 
 	// Remember the default value as a string; it won't change.
-	flag := &Flag{name, descr, value, value.String()}
+	flag := &Flag{
+		Long: long, Short: short, Desc: descr,
+		Value: value, DefValue: value.String()}
 
-	f.flagsMap[name] = flag
+	if long != "" {
+		f.longMap[long] = flag
+	}
+
+	if short != "" {
+		f.shortMap[short] = flag
+	}
+
 	f.flagsList = append(f.flagsList, flag)
 
 	return nil
@@ -91,19 +115,12 @@ func (f *FlagSet) Flag(i int) *Flag {
 	return f.flagsList[i]
 }
 
-func (f *FlagSet) sortFlags() {
-	sort.Slice(f.flagsList, func(i, j int) bool {
-		return f.flagsList[i].Name < f.flagsList[j].Name
-	})
-}
-
 // PrintDefaults print the default usage for the flags.
 func (f *FlagSet) PrintDefaults() {
 	if f.NFlags() == 0 {
 		return // nothing to print...
 	}
 
-	f.sortFlags()
 	fmt.Fprintf(f.output, "Flags:\n")
 
 	for _, flag := range f.flagsList {
@@ -114,13 +131,122 @@ func (f *FlagSet) PrintDefaults() {
 
 		// FIXME: there is a lot more to do here with optional values and short
 		// flags and such...
-		fmt.Fprintf(f.output, "  --%s value\n\t%s%s\n", flag.Name, flag.Desc, defVal)
+		shortFlag, longFlag := "", ""
+
+		if flag.Short != "" {
+			shortFlag = "-" + flag.Short
+		}
+
+		if flag.Long != "" {
+			if shortFlag != "" {
+				shortFlag += ","
+			}
+
+			longFlag = "--" + flag.Long
+		}
+
+		value := " value"
+
+		if flag.noValues() {
+			value = ""
+		}
+
+		if def, ok := flag.hasDefault(); ok {
+			value = " [value] (default " + def + ")"
+		}
+
+		fmt.Fprintf(f.output, "  %s%s%s\n\t%s%s\n", shortFlag, longFlag, value, flag.Desc, defVal)
 	}
 }
 
+func (f *Flag) noValues() bool {
+	if nv, ok := f.Value.(interfaces.NoValueFlag); ok {
+		return nv.NoValueFlag()
+	}
+
+	return false
+}
+
+func (f *Flag) hasDefault() (string, bool) {
+	if def, ok := f.Value.(interfaces.DefaultValueFlag); ok {
+		return def.Default(), ok
+	}
+
+	return "", false
+}
+
+func wrapShortParseError(name string, err error) error {
+	if err != nil {
+		return interfaces.ParseErrorf("error parsing flag -%s: %s", name, err)
+	}
+
+	return nil
+}
+
 func (f *FlagSet) parseShort() error {
-	// FIXME
-	panic("should not be called yet!")
+	flags := f.args[0][1:]
+	f.args = f.args[1:]
+
+	// Just to avoid some common error...
+	for i := 0; i < len(flags); i++ {
+		if flags[i] == '=' {
+			return interfaces.ParseErrorf("--flag=value syntax for flags only allowed for long options: -%s", flags)
+		}
+	}
+
+	// every flag except the last cannot a value, so we treat those first
+	for i := 0; i < len(flags)-1; i++ {
+		x := string(flags[i])
+		flag, valid := f.shortMap[x]
+
+		if !valid {
+			return interfaces.ParseErrorf("flag provided but not defined: -%s", x)
+		} else if flag.noValues() {
+			if err := flag.Value.Set(""); err != nil {
+				return interfaces.ParseErrorf("error evaluating flag -%s: %s", x, err)
+			}
+		} else if def, ok := flag.hasDefault(); ok {
+			if err := flag.Value.Set(def); err != nil {
+				return interfaces.ParseErrorf("error evaluating flag -%s: %s", x, err)
+			}
+		} else {
+			// only the last flag in flags get a value, and this isn't it
+			return interfaces.ParseErrorf("flag -%s needs an argument", x)
+		}
+	}
+
+	x := string(flags[len(flags)-1])
+	flag, valid := f.shortMap[x]
+
+	if !valid {
+		return interfaces.ParseErrorf("flag provided but not defined: -%s", x)
+	}
+
+	if flag.noValues() {
+		return wrapShortParseError(x, flag.Value.Set(""))
+	}
+
+	if def, ok := flag.hasDefault(); ok {
+		return wrapShortParseError(x, flag.Value.Set(def))
+	}
+
+	if len(f.args) == 0 || f.args[0][0] == '-' {
+		return interfaces.ParseErrorf("flag -%s needs an argument", x)
+	}
+
+	// get the next argument as the value for the flag
+	value := f.args[0]
+	f.args = f.args[1:]
+
+	return wrapShortParseError(x, flag.Value.Set(value))
+}
+
+func wrapLongParseError(name string, err error) error {
+	if err != nil {
+		return interfaces.ParseErrorf("error parsing flag --%s: %s", name, err)
+	}
+
+	return nil
 }
 
 func (f *FlagSet) parseLong() error {
@@ -145,42 +271,44 @@ func (f *FlagSet) parseLong() error {
 		}
 	}
 
-	flag, alreadythere := f.flagsMap[name]
-	if !alreadythere {
+	flag, valid := f.longMap[name]
+	if !valid {
 		return interfaces.ParseErrorf("flag provided but not defined: --%s", name)
 	}
 
-	// FIXME: similar for options that do not take *any* value
+	if hasValue {
+		if flag.noValues() {
+			return interfaces.ParseErrorf("flag --%s cannot take values", name)
+		}
 
-	if fv, ok := flag.Value.(interfaces.BoolFlag); ok && fv.IsBoolFlag() { // special case: doesn't need an arg
-		if hasValue {
-			if err := flag.Value.Set(value); err != nil {
-				return interfaces.ParseErrorf("error parsing flag %s: %s", name, err)
-			}
-		} else {
-			if err := flag.Value.Set("true"); err != nil {
-				return interfaces.ParseErrorf("error parsing flag %s: %s", name, err)
-			}
-		}
-	} else {
-		// It must have a value, which might be the next argument.
-		if !hasValue && len(f.args) > 0 {
-			// value is the next arg
-			hasValue = true
-			value, f.args = f.args[0], f.args[1:]
-		}
-		if !hasValue {
-			return interfaces.ParseErrorf("flag needs an argument: --%s", name)
-		}
-		if err := flag.Value.Set(value); err != nil {
-			return interfaces.ParseErrorf("invalid value %q for flag --%s: %v", value, name, err)
-		}
+		return wrapLongParseError(name, flag.Value.Set(value))
 	}
 
-	return nil // success
+	if flag.noValues() {
+		// we don't take values, so we can stop with this flag. Invoke it by
+		// calling Set() with the empty string
+		return wrapLongParseError(name, flag.Value.Set(""))
+	}
+
+	if def, ok := flag.hasDefault(); ok {
+		// flags with defaults can only take arguments as --flag=arg,
+		// since we cannot figure out if --flag xxx means that xxx is a
+		// flag argument or a positional argument. So if we have one of
+		// those, then we invoke it here, and do not look at the following
+		// arg.
+		return wrapLongParseError(name, flag.Value.Set(def))
+	}
+
+	if len(f.args) == 0 || f.args[0][0] == '-' {
+		return interfaces.ParseErrorf("flag --%s needs an argument", name)
+	}
+
+	// get the next argument as the value for the flag
+	value, f.args = f.args[0], f.args[1:]
+
+	return wrapLongParseError(name, flag.Value.Set(value))
 }
 
-// FIXME: I nicked this from flag, but I need to reimplement it
 func (f *FlagSet) parseOne() (more bool, err error) {
 	if len(f.args) == 0 {
 		return false, nil

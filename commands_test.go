@@ -57,7 +57,7 @@ long
 Flags:
   --foo value
 	set foo
-  --help value
+  -h,--help
 	show help for name
 	
 Arguments:
@@ -91,7 +91,7 @@ short
 Flags:
   --foo value
 	set foo
-  --help value
+  -h,--help
 	show help for name
 	
 Arguments:
@@ -148,7 +148,7 @@ func TestOption(t *testing.T) {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, `invalid value "foo" for flag --x: argument "foo" cannot be parsed as int.`) {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, `error parsing flag --x: argument "foo" cannot be parsed as int.`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 

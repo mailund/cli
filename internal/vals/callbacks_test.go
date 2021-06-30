@@ -61,15 +61,15 @@ func TestBoolCallbacks(t *testing.T) {
 	fv := vals.AsCallback(&f, nil)
 	gv := vals.AsCallback(&g, "bar")
 
-	if h, ok := fv.(vals.FuncBoolValue); !ok {
+	if h, ok := fv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
-		t.Error("We should have IsBoolFlag()")
+	} else if !h.NoValueFlag() {
+		t.Error("We should have NoValueFlag()")
 	}
 
-	if h, ok := gv.(vals.FuncBoolValue); !ok {
+	if h, ok := gv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
+	} else if !h.NoValueFlag() {
 		t.Error("We should have IsBool()")
 	}
 
@@ -99,7 +99,7 @@ func TestBoolCallbacks(t *testing.T) {
 		t.Errorf("fv should be valid, but we got error: %s", err)
 	}
 
-	nilFunVal := vals.FuncBoolValue(nil)
+	nilFunVal := vals.FuncNoValue(nil)
 	if err := nilFunVal.Validate(); err == nil {
 		t.Errorf("nil function shouldn't validate")
 	}
@@ -116,15 +116,15 @@ func TestBoolECallbacks(t *testing.T) {
 	fv := vals.AsCallback(&f, nil)
 	gv := vals.AsCallback(&g, "bar")
 
-	if h, ok := fv.(vals.FuncBoolValue); !ok {
+	if h, ok := fv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
+	} else if !h.NoValueFlag() {
 		t.Error("We should have IsBoolFlag()")
 	}
 
-	if h, ok := gv.(vals.FuncBoolValue); !ok {
+	if h, ok := gv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
+	} else if !h.NoValueFlag() {
 		t.Error("We should have IsBool()")
 	}
 

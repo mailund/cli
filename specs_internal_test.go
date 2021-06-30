@@ -32,8 +32,8 @@ func checkFlags(t *testing.T, f *flags.FlagSet, argv interface{}) {
 			t.Fatalf("Expected there to be the flag %s\n", name)
 		}
 
-		if fl.Name != name {
-			t.Errorf("Expected flag %s to have name %s but it has %s\n", name, name, fl.Name)
+		if fl.Long != name {
+			t.Errorf("Expected flag %s to have name %s but it has %s\n", name, name, fl.Long)
 		}
 
 		if fl.Desc != tfield.Tag.Get("descr") {
