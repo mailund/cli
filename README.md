@@ -694,7 +694,7 @@ func (vals *VariadicIntValue) Set(xs []string) error {
     }
 
     (*vals)[i] = int(val)
-	}
+  }
 
   return nil
 }
