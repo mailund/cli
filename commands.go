@@ -1,13 +1,13 @@
 package cli
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
 	"sort"
 
 	"github.com/mailund/cli/internal/failure"
+	"github.com/mailund/cli/internal/flags"
 	"github.com/mailund/cli/internal/params"
 	"github.com/mailund/cli/internal/vals"
 )
@@ -41,7 +41,7 @@ type CommandSpec struct {
 type Command struct {
 	CommandSpec
 
-	flags  *flag.FlagSet
+	flags  *flags.FlagSet
 	params *params.ParamSet
 	argv   interface{}
 	out    io.Writer
@@ -70,9 +70,9 @@ func (cmd *Command) SetOutput(out io.Writer) {
 
 // SetErrorFlag recursively sets error handling flags on the command's flags
 // and params, and on all subcommands this command holds.
-func (cmd *Command) SetErrorFlag(f flag.ErrorHandling) {
-	cmd.flags.Init(cmd.Name, f)
-	cmd.params.SetFlag(f)
+func (cmd *Command) SetErrorFlag(f failure.ErrorHandling) {
+	cmd.flags.SetErrFlag(f)
+	cmd.params.SetErrFlag(f)
 
 	for _, subcmd := range cmd.Subcommands {
 		subcmd.SetErrorFlag(f)
@@ -129,6 +129,15 @@ func (cmd *Command) Run(args []string) {
 	}
 }
 
+func showHelp(usage func()) func() error {
+	return func() error {
+		usage()
+		os.Exit(0)
+
+		return nil
+	}
+}
+
 // NewCommandError Create a new command. The function returns a new command object or an error.
 // Since errors are only possible if the specification is incorrect in some way, you will
 // usually want NewCommand, that panics on errors, instead.
@@ -140,8 +149,8 @@ func (cmd *Command) Run(args []string) {
 func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // specs are large but only copied when we create a command
 	cmd := &Command{
 		CommandSpec: spec,
-		flags:       flag.NewFlagSet(spec.Name, flag.ExitOnError),
-		params:      params.NewParamSet(spec.Name, flag.ExitOnError)}
+		flags:       flags.NewFlagSet(spec.Name, failure.ExitOnError),
+		params:      params.NewParamSet(spec.Name, failure.ExitOnError)}
 
 	if spec.Init != nil {
 		cmd.argv = spec.Init()
@@ -156,13 +165,15 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 	const linewidth = 70
 	cmd.Long = wordWrap(cmd.Long, linewidth)
 
-	// There is always a help command when we parse, but the usage won't
-	// show it unless we make it explicit
-	cmd.flags.Bool("help", false, fmt.Sprintf("show help for %s", cmd.Name))
-
 	if spec.Usage == nil {
 		cmd.SetUsage(DefaultUsage(cmd))
 	}
+
+	hf := vals.FuncNoValue(showHelp(spec.Usage))
+
+	// There is always a help command when we parse, but the usage won't
+	// show it unless we make it explicit
+	_ = cmd.flags.Var(hf, "help", "h", fmt.Sprintf("show help for %s", cmd.Name)) // cannot fail
 
 	if len(cmd.Subcommands) > 0 {
 		cmd.subcommands = map[string]*Command{}
@@ -199,17 +210,17 @@ func NewCommand(spec CommandSpec) *Command { //nolint:gocritic // specs are larg
 func DefaultUsage(cmd *Command) func() {
 	return func() {
 		fmt.Fprintf(cmd.Output(),
-			"Usage: %s [options] %s\n\n",
+			"Usage: %s [flags] %s\n\n",
 			cmd.Name, cmd.params.ShortUsage())
 
-		if len(cmd.Long) > 0 {
+		if cmd.Long != "" {
 			fmt.Fprintf(cmd.Output(), "%s\n\n", cmd.Long)
 		} else {
 			fmt.Fprintf(cmd.Output(), "%s\n\n", cmd.Short)
 		}
 
 		// Print options and arguments at the bottom.
-		fmt.Fprintf(cmd.Output(), "Options:\n")
+		fmt.Fprintf(cmd.Output(), "\n")
 		cmd.flags.PrintDefaults()
 		fmt.Fprintf(cmd.Output(), "\n")
 		cmd.params.PrintDefaults()

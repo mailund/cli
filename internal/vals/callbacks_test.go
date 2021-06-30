@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/vals"
 )
 
@@ -38,6 +39,17 @@ func TestCallbacks(t *testing.T) {
 	if fv.String() != "" || gv.String() != "" {
 		t.Error("Functions should have empty default strings")
 	}
+
+	if v, ok := fv.(interfaces.Validator); !ok {
+		t.Error("A callback function should be a validator")
+	} else if err := v.Validate(); err != nil {
+		t.Errorf("fv should be valid, but we got error: %s", err)
+	}
+
+	nilFunVal := vals.FuncValue(nil)
+	if err := nilFunVal.Validate(); err == nil {
+		t.Errorf("nil function shouldn't validate")
+	}
 }
 
 func TestBoolCallbacks(t *testing.T) {
@@ -49,15 +61,15 @@ func TestBoolCallbacks(t *testing.T) {
 	fv := vals.AsCallback(&f, nil)
 	gv := vals.AsCallback(&g, "bar")
 
-	if h, ok := fv.(vals.FuncBoolValue); !ok {
+	if h, ok := fv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
-		t.Error("We should have IsBoolFlag()")
+	} else if !h.NoValueFlag() {
+		t.Error("We should have NoValueFlag()")
 	}
 
-	if h, ok := gv.(vals.FuncBoolValue); !ok {
+	if h, ok := gv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
+	} else if !h.NoValueFlag() {
 		t.Error("We should have IsBool()")
 	}
 
@@ -80,6 +92,17 @@ func TestBoolCallbacks(t *testing.T) {
 	if fv.String() != "" || gv.String() != "" {
 		t.Error("Functions should have empty default strings")
 	}
+
+	if v, ok := fv.(interfaces.Validator); !ok {
+		t.Error("A bool function should be a validator")
+	} else if err := v.Validate(); err != nil {
+		t.Errorf("fv should be valid, but we got error: %s", err)
+	}
+
+	nilFunVal := vals.FuncNoValue(nil)
+	if err := nilFunVal.Validate(); err == nil {
+		t.Errorf("nil function shouldn't validate")
+	}
 }
 
 func TestBoolECallbacks(t *testing.T) {
@@ -93,15 +116,15 @@ func TestBoolECallbacks(t *testing.T) {
 	fv := vals.AsCallback(&f, nil)
 	gv := vals.AsCallback(&g, "bar")
 
-	if h, ok := fv.(vals.FuncBoolValue); !ok {
+	if h, ok := fv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
+	} else if !h.NoValueFlag() {
 		t.Error("We should have IsBoolFlag()")
 	}
 
-	if h, ok := gv.(vals.FuncBoolValue); !ok {
+	if h, ok := gv.(vals.FuncNoValue); !ok {
 		t.Error("We should have a bool function here")
-	} else if !h.IsBoolFlag() {
+	} else if !h.NoValueFlag() {
 		t.Error("We should have IsBool()")
 	}
 
@@ -151,6 +174,17 @@ func TestVariadicCallbacks(t *testing.T) {
 
 	if y != "foobarbaz" {
 		t.Error("i didn't work")
+	}
+
+	if v, ok := fv.(interfaces.Validator); !ok {
+		t.Error("A variadic function should be a validator")
+	} else if err := v.Validate(); err != nil {
+		t.Errorf("fv should be valid, but we got error: %s", err)
+	}
+
+	nilFunVal := vals.VariadicFuncValue(nil)
+	if err := nilFunVal.Validate(); err == nil {
+		t.Errorf("nil function shouldn't validate")
 	}
 }
 

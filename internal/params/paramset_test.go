@@ -12,14 +12,14 @@ import (
 )
 
 func TestMakeParamSet(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	if p.Name != "test" {
 		t.Fatalf("New params set got the wrong name")
 	}
 }
 
 func TestShortUsage(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	if p.ShortUsage() != "" {
 		t.Errorf(`Short usage of empty paramset should be ""`)
 	}
@@ -52,7 +52,7 @@ func TestStringParam(t *testing.T) {
 		y string
 	)
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	p.Var((*vals.StringValue)(&x), "x", "")
 	p.Var((*vals.StringValue)(&y), "y", "")
 
@@ -68,7 +68,7 @@ func TestStringParam(t *testing.T) {
 }
 
 func TestPrintDefault(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 
 	// without any arguments, it shouldn't print anything
 	builder := new(strings.Builder)
@@ -107,7 +107,7 @@ func TestPrintDefault(t *testing.T) {
 
 func TestPrintDefaultVariadic(t *testing.T) {
 	builder := new(strings.Builder)
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	p.SetOutput(builder)
 
 	var (
@@ -136,7 +136,7 @@ func TestPrintDefaultVariadic(t *testing.T) {
 }
 
 func TestParseVariadic(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 
 	var (
 		x    vals.StringValue
@@ -155,7 +155,7 @@ func TestParseVariadic(t *testing.T) {
 }
 
 func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as many statements as it likes
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	x := vals.StringValue("")
 
 	p.Var(&x, "x", "")
@@ -261,7 +261,7 @@ func TestFailureContinue(t *testing.T) {
 
 	failure.Failure = func() { failed = true }
 
-	p := params.NewParamSet("test", params.ContinueOnError)
+	p := params.NewParamSet("test", failure.ContinueOnError)
 	x := vals.StringValue("")
 
 	builder := new(strings.Builder)
@@ -287,11 +287,11 @@ func TestFailureSetFlag(t *testing.T) {
 	failure.Failure = func() { failed = true }
 
 	// create a paramset that will crash on errors
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	x := vals.StringValue("")
 
 	// but then change the flag
-	p.SetFlag(params.ContinueOnError)
+	p.SetErrFlag(failure.ContinueOnError)
 
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
@@ -313,7 +313,7 @@ func TestFailureSetFlag(t *testing.T) {
 func TestFuncCallback(t *testing.T) {
 	var called = false
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	f := func(arg string) error {
 		if arg != "arg" {
 			t.Errorf("Got unexpected argument for callback")
@@ -337,7 +337,7 @@ func TestFuncCallbackError(t *testing.T) {
 	failed := false
 	failure.Failure = func() { failed = true }
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
 
@@ -365,7 +365,7 @@ func TestVariadicFuncError(t *testing.T) {
 	failed := false
 	failure.Failure = func() { failed = true }
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	builder := new(strings.Builder)
 	p.SetOutput(builder)
 
@@ -395,7 +395,7 @@ func TestInt(t *testing.T) {
 	failed := false
 	failure.Failure = func() { failed = true }
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	i := vals.IntValue(0)
 	p.Var(&i, "i", "int")
 
@@ -425,7 +425,7 @@ func TestBool(t *testing.T) {
 	failed := false
 	failure.Failure = func() { failed = true }
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	b := vals.BoolValue(false)
 	p.Var(&b, "var", "")
 
@@ -473,7 +473,7 @@ func TestFloat(t *testing.T) {
 	failed := false
 	failure.Failure = func() { failed = true }
 
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	x := vals.Float64Value(0.0)
 	p.Var(&x, "var", "")
 
@@ -500,7 +500,7 @@ func TestFloat(t *testing.T) {
 }
 
 func TestVariadicStrings(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	x := vals.StringValue("")
 	args := []string{"x", "y", "z"}
 	res := []string{}
@@ -520,7 +520,7 @@ func TestVariadicStrings(t *testing.T) {
 }
 
 func TestVariadicBools(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	res := []bool{}
 
 	p.VariadicVar((*vals.VariadicBoolValue)(&res), "x [x...]", "", 0)
@@ -551,7 +551,7 @@ func TestVariadicBools(t *testing.T) {
 }
 
 func TestVariadicInts(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	res := []int{}
 
 	p.VariadicVar((*vals.VariadicIntValue)(&res), "x [x...]", "", 0)
@@ -583,7 +583,7 @@ func TestVariadicInts(t *testing.T) {
 }
 
 func TestVariadicFloats(t *testing.T) {
-	p := params.NewParamSet("test", params.ExitOnError)
+	p := params.NewParamSet("test", failure.ExitOnError)
 	res := []float64{}
 
 	p.VariadicVar((*vals.VariadicFloat64Value)(&res), "x [x...]", "", 0)
@@ -614,7 +614,7 @@ func TestVariadicFloats(t *testing.T) {
 }
 
 func TestParamVariadic(t *testing.T) {
-	p := params.NewParamSet("p", params.ExitOnError)
+	p := params.NewParamSet("p", failure.ExitOnError)
 
 	var (
 		i vals.IntValue

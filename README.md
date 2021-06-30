@@ -155,7 +155,7 @@ Here’s a variation that adds a flag as well:
 
 ```go
 type NumArgs struct {
-  Round bool      `flag:"round" descr:"should result be rounded to nearest integer"`
+  Round bool      `flag:"round" short:"r" descr:"should result be rounded to nearest integer"`
   Args  []float64 `pos:"args" descr:"numerical arguments to command"`
 }
 
@@ -183,11 +183,13 @@ The type `NumArgs` has both a `flag:` and `pos:` tag, creating a boolean flag de
 
 The `Init` function again just creates a `new(NumArgs)`, and the `Action` is a little more complicated, but only because it calculates the sum of multiple values. The way it handles the arguments is the same: it casts the argument to `*NumArgs` and from there it can get both the flag and the float positional arguments.
 
-Run it with `cmd.Run([]string{"0.42", "3.14", "0.3"})` it and will print the sum (3.860000) and with `cmd.Run([]string{"-round", "0.42", "3.14", "0.3"})` and it will round the result (4.000000 — it is a silly example, so I still print it as a float…).
+Run it with `cmd.Run([]string{"0.42", "3.14", "0.3"})` it and will print the sum (3.860000) and with `cmd.Run([]string{"--round", "0.42", "3.14", "0.3"})` and it will round the result (4.000000 — it is a silly example, so I still print it as a float…).
+
+The string after `flag:` in the tags defines the name of the flag. If it is a single letter, it can be used as both a long flag, `--f` and as a short flag `-f`, but if it is more than one letter, you can only use it as a long flag `--flag`. If you want both a long and a short flag, you can use the `short:` tag, as we did above. By adding `short:"r"`, we install two flags, the long `--round` and the short `-r`. Short flags can only have one letter, but you can combine them, so `-xyz` is equivalent to `-x -y -z`. You cannot combine long flags, but you can provide values to them with the syntax `--flag=value`, where short flags can only take values as `-f value`.
 
 Flags have default values, so how do we deal with that? The short answer is that the default values for flags are the values the struct’s fields have when you give it to `cli`. That means that your `Init` function can set the default values simply by setting the struct’s fields before it returns it.
 
-This is how we could make the `-round` flag default to `true`:
+This is how we could make the `--round` flag default to `true`:
 
 ```go
 cmd := cli.NewCommand(
@@ -340,7 +342,7 @@ Usage: calc [options] cmd ...
 <long explanation of arithmetic>
 
 Options:
-  -help
+  -h,-help
     show help for calc
 
 Arguments:
@@ -462,11 +464,11 @@ Instead of using parameters as values to set, you can install callback functions
 
 ```go
 type (
-  BCB  = func()
-  BCBI = func(interface{})
+  NVCB  = func()
+  NVCBI = func(interface{})
 
-  BCBE  = func() error
-  BCBIE = func(interface{}) error
+  NVCBE  = func() error
+  NVCBIE = func(interface{}) error
 
   CB  = func(string) error
   CBI = func(string, interface{}) error
@@ -476,9 +478,9 @@ type (
 )
 ```
 
-The first four, `BCB`, `BCBI`, `BCBE` and `BCBIE` are "boolean" callbacks, in the sense that they work like boolean flags. Those are command line flags that do not take any arguments, and they can only be used as flags. When they are, a flag, `-f` without arguments, will call the function. A `BCB` and `BCBE` flag will be called without arguments, of course, and a `BCBI` or `BCBIE` function will be called with the command line's argument structure, as returned from the `Init` function. The `-E` functions return an error and the other two do not. Callbacks that do not receive any input might not want to implement error handling, so `cli` support both boolean callbacks with and without an error return value. The functions that receive input should all return an `error` (although I might change that in the future).
+The first four, `NVCB`, `NVCBI`, `NVCBE` and `NVCBIE` do not take any command-line arguments. They can only be used as flags. When they are, a flag, `-f` without arguments, will call the function. A `NVCB` and `NVCBE` flag will be called without arguments, of course, and a `NVCBI` or `NVCBIE` function will be called with the command line's argument structure, as returned from the `Init` function. The `-E` functions return an error and the other two do not. Callbacks that do not receive any input might not want to implement error handling, so `cli` support both boolean callbacks with and without an error return value. The functions that receive input should all return an `error` (although I might change that in the future).
 
-The `CB` and `CBI` functions work with both flags and positional arguments. For flats, `-f=arg` or `-f arg`, the `arg` string is passed as the first argument, and for positional arguments, whatever argument is on the command line will be the callback's argument. They differ only in the second argument to functions of type `CBI`, which will be the command's argument-struct when the function is called (so values set before the function is called can be found in the struct, but flags and positional arguments that come after will not have been set yet).
+The `CB` and `CBI` functions work with both flags and positional arguments. For flags, `--f=arg` or `-f arg`, the `arg` string is passed as the first argument, and for positional arguments, whatever argument is on the command line will be the callback's argument. They differ only in the second argument to functions of type `CBI`, which will be the command's argument-struct when the function is called (so values set before the function is called can be found in the struct, but flags and positional arguments that come after will not have been set yet).
 
 The `VCB` and `VCBI` functions work the same as `CB` and `CBI` but take multiple arguments in the form of a string slice and can only be used for variadic parameters.
 
@@ -593,4 +595,168 @@ Error parsing parameter string='Foo', 'Foo' is not a valid string.
 
 > validate -l foo
 A valid string: foo
+```
+
+## Protocols
+
+Most of the behaviour of `cli` is handled through protocols and interfaces, making it relatively easy to extend.
+
+Any type the implements `PosValue` as pointer-receiver can be used as a positional argument.
+
+```go
+type PosValue interface {
+  Set(string) error // Should set the value from a string
+}
+```
+
+The base types are wrapped in types that do this, and integers, for example, are handled like this:
+
+```go
+type IntValue int
+
+func (val *IntValue) Set(x string) error {
+  v, err := strconv.ParseInt(x, 0, strconv.IntSize)
+  if err != nil {
+    err = interfaces.ParseErrorf("argument \"%s\" cannot be parsed as int", x)
+  } else {
+    *val = IntValue(v)
+  }
+  return err
+}
+```
+
+Flags also need a way to obtain the default value when printing usage help, so flags have the `FlagValue` interface:
+
+
+```go
+type FlagValue interface {
+  String() string   // Should return a string representation of the value
+  Set(string) error // Should set the value from a string
+}
+```
+
+This is the same `Set(string) error` method as for positional arguments and a function for printing a value as a string. For integers, `cli`'s implementation is:
+
+```go
+func (val *IntValue) String() string {
+	return strconv.Itoa(int(*val))
+}
+```
+
+Implement your own type with the right methods, and you can use it as flags and positional arguments in `cli`. For example, if you want a type where you can select one of a small number of options, you could implement:
+
+```go
+type Choice struct {
+  Choice  string
+  Options []string
+}
+
+func (c *Choice) Set(x string) error {
+  for _, v := range c.Options {
+    if v == x {
+      c.Choice = v
+      return nil
+    }
+  }
+
+  return interfaces.ParseErrorf(
+    "%s is not a valid choice, must be in %s", x, "{" + strings.Join(c.Options, ",") + "}")
+}
+
+func (c *Choice) String() string {
+  return c.Choice
+}
+```
+
+This `Choice` type implements the `FlagValue`, so you can use it as both flags and positional arguments.
+
+
+Variadic arguments implement the `VariadicValue` interface:
+
+```go
+type VariadicValue interface {
+  Set([]string) error // Should set the value from a slice of strings
+}
+```
+
+For integers, again, `cli` implements it as:
+
+```go
+type VariadicIntValue []int
+
+func (vals *VariadicIntValue) Set(xs []string) error {
+  *vals = make([]int, len(xs))
+
+  for i, x := range xs {
+    val, err := strconv.ParseInt(x, 0, strconv.IntSize)
+    if err != nil {
+      return interfaces.ParseErrorf("cannot parse '%s' as int", x)
+    }
+
+    (*vals)[i] = int(val)
+	}
+
+  return nil
+}
+```
+
+For flags, there can be additional constraints. Some flags, for example, should not take arguments. If you don't want them to, then implement the `NoValueFlag` interface:
+
+```go
+type NoValueFlag interface {
+  NoValueFlag() bool
+}
+```
+
+This is how callbacks that do not take arguments inform the flag parser about that. This is how callbacks without arguments (but that may raise errors) are implemented:
+
+```go
+type FuncNoValue func() error         // Wrapping functions that do not take parameter arguments
+
+func (f FuncNoValue) Set(_ string) error { return f() }
+func (f FuncNoValue) String() string     { return "" }
+func (f FuncNoValue) NoValueFlag() bool  { return true }
+```
+
+The first two methods ensure that we can use them as both flags and positional arguments, and the last tells the flags parser that it is an error to provide an argument, and a command line that looks like `--foo bar baz`, where `--foo` is such a flag, should not consider `bar` a value to be given to `--foo`.
+
+Boolean flags are a little different. There, we usually want `--foo` to mean that the boolean value should be set to `true`, but we also want `--foo=true` and `--foo=false` to be valid. So, those flags have defaults. Well, all flags have defaults, but there is the default value when the flag is not used, and then the default value when we use it. For a boolean flag, usually the default if `false`, but `--foo` is interpreted as `--foo=true`, so `true` is the default string we should pass to the flag's `Set(string) error` method.
+
+To handle those flags, we have the `DefaultValueFlag` interface:
+
+
+```go
+type DefaultValueFlag interface {
+  Default() string
+}
+```
+
+The `Default() string` method should return the default string to give to `Set(string) error` when the flag is used without an argument. For booleans, `cli` implement it as:
+
+```go
+func (val *BoolValue) Default() string { return "true" }
+```
+
+Flags that implement `DefaultValueFlag` can only take arguments as `--flag=arg`, since there is no way of knowing if `--flag foo` should interpret `foo` as a value for `--flag`, or if `--flag` should use its default and we should treat `foo` as a positional argument.
+
+There are values that we want to validate as soon as we have linked struct fields to flags and parameters. Some data will crash the program when we try to parse a command line, and although we cannot capture this at compile time, when we use reflection to connect a struct with `cli`, we want to capture it early. We will eventually discover it when the parser reaches a point it cannot handle, of course, but it is better to check the data as soon as commands are connected, because then we catch it every time we run the program, rather than when commands are parsed.
+
+The `Validator` interface gives hook for that:
+
+```go
+type Validator interface {
+  Validate() error // Should return nil if everything is fine, or an error otherwise
+}
+```
+
+Flags and parameters that implement the interface will have their `Validate() error` method called as soon as a command is created. Callbacks cannot be `nil` (that will certainly crash the program when we call them), and functions in `cli` check this using a `Validator` function:
+
+```go
+func (f FuncNoValue) Validate() error {
+  if f == nil {
+    return interfaces.SpecErrorf("callbacks cannot be nil")
+  }
+
+  return nil
+}
 ```

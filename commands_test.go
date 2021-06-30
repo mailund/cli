@@ -1,7 +1,6 @@
 package cli_test
 
 import (
-	"flag"
 	"reflect"
 	"regexp"
 	"strings"
@@ -50,15 +49,15 @@ func TestNewCommandUsage(t *testing.T) { //nolint:funlen // Only too long becaus
 	cmd.Usage()
 
 	msg := builder.String()
-	expected := `Usage: name [options] bar
+	expected := `Usage: name [flags] bar
         
         
 long
 	
-Options:
-  -foo
-	value set foo
-  -help
+Flags:
+  --foo value
+	set foo
+  -h,--help
 	show help for name
 	
 Arguments:
@@ -84,15 +83,15 @@ Arguments:
 	cmd.Usage()
 
 	msg = builder.String()
-	expected = `Usage: name [options] bar
+	expected = `Usage: name [flags] bar
         
         
 short
 	
-Options:
-  -foo
-	value set foo
-  -help
+Flags:
+  --foo value
+	set foo
+  -h,--help
 	show help for name
 	
 Arguments:
@@ -124,7 +123,7 @@ func TestOption(t *testing.T) {
 	called := false
 
 	type argv struct {
-		X int `flag:"x"`
+		X int `flag:"xx" short:"x"`
 	}
 
 	var parsed argv
@@ -136,7 +135,7 @@ func TestOption(t *testing.T) {
 		Long:   "a really good foo",
 		Init:   init,
 		Action: func(_ interface{}) { called = true }})
-	cmd.SetErrorFlag(flag.ContinueOnError)
+	cmd.SetErrorFlag(failure.ContinueOnError)
 
 	// We won't call Failure() here, because the error is handled
 	// by flag.FlagSet(), but we get the error from it.
@@ -149,11 +148,25 @@ func TestOption(t *testing.T) {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `invalid value "foo" for flag -x: argument "foo" cannot be parsed as int`) {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, `error parsing flag -x: argument "foo" cannot be parsed as int.`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 
 	cmd.Run([]string{"-x", "42"}) // correct type for int
+
+	if !called {
+		t.Error("The command should be called now")
+	}
+
+	if parsed.X != 42 {
+		t.Error("The option wasn't set correctly")
+	}
+
+	// the long flag should work as well...
+	called = false
+	parsed.X = 0
+
+	cmd.Run([]string{"--xx", "42"}) // correct type for int
 
 	if !called {
 		t.Error("The command should be called now")
@@ -295,7 +308,7 @@ func TestMenuFailure(t *testing.T) {
 
 	builder := new(strings.Builder)
 	menu.SetOutput(builder)
-	menu.SetErrorFlag(flag.ContinueOnError)
+	menu.SetErrorFlag(failure.ContinueOnError)
 	menu.Run([]string{"z"})
 
 	if !failed {
@@ -303,15 +316,15 @@ func TestMenuFailure(t *testing.T) {
 	}
 
 	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "'z' is not a valid command for menu.") {
-		t.Errorf("Expected different error message than %s\n", errmsg)
+		t.Errorf("(1) Expected different error message than %s\n", errmsg)
 	}
 
 	builder = new(strings.Builder)
 	menu.SetOutput(builder)
-	menu.Run([]string{"x", "-foo"})
+	menu.Run([]string{"x", "--foo"})
 
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "flag provided but not defined: -foo") {
-		t.Errorf("Expected different error message than %s\n", errmsg)
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "flag provided but not defined: --foo.") {
+		t.Errorf("(2) Expected different error message than %s\n", errmsg)
 	}
 }
 

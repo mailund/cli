@@ -10,18 +10,24 @@ import (
 
 func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
 	if val := vals.AsFlagValue(vfield.Addr()); val != nil {
-		cmd.flags.Var(val, name, tfield.Tag.Get("descr"))
-		return nil
+		short := tfield.Tag.Get("short")
+
+		if short == "" && len(name) == 1 {
+			short = name
+		}
+
+		return cmd.flags.Var(val, name, short, tfield.Tag.Get("descr"))
 	}
 
 	if tfield.Type.Kind() == reflect.Func {
-		if vfield.IsNil() {
-			return interfaces.SpecErrorf("callbacks cannot be nil")
-		}
-
 		if val := vals.AsCallback(vfield, argv); val != nil {
-			cmd.flags.Var(val, name, tfield.Tag.Get("descr"))
-			return nil
+			short := tfield.Tag.Get("short")
+
+			if short == "" && len(name) == 1 {
+				short = name
+			}
+
+			return cmd.flags.Var(val, name, short, tfield.Tag.Get("descr"))
 		}
 
 		return interfaces.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
@@ -66,10 +72,6 @@ func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.Struc
 	}
 
 	if tfield.Type.Kind() == reflect.Func {
-		if vfield.IsNil() {
-			return interfaces.SpecErrorf("callbacks cannot be nil")
-		}
-
 		if val := vals.AsCallback(vfield, argv); val != nil {
 			cmd.params.Var(val, name, tfield.Tag.Get("descr"))
 			return nil
@@ -106,5 +108,5 @@ func connectSpecsFlagsAndParams(cmd *Command, argv interface{}) error {
 		}
 	}
 
-	return nil
+	return validateFlagsAndParams(cmd)
 }
