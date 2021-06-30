@@ -136,7 +136,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				params.NewParamSet("test", failure.ExitOnError),
 				func() interface{} {
 					var x struct {
-						Foo string `flag:"foo" descr:"foobar"`
+						Foo string `flag:"foo" short:"f" descr:"foobar"`
 					}
 
 					x.Foo = "qux"
@@ -153,7 +153,7 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 				params.NewParamSet("test", failure.ExitOnError),
 				func() interface{} {
 					var x struct {
-						Foo int `flag:"foo" descr:"foobar"`
+						Foo int `flag:"i" descr:"foobar"`
 					}
 
 					x.Foo = 42
@@ -434,6 +434,19 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 					t.Errorf("The callback function is no longer its default")
 				}
 			},
+		},
+
+		{
+			name: "Variadic callback nil",
+			args: args{
+				flags.NewFlagSet("test", failure.ExitOnError),
+				params.NewParamSet("test", failure.ExitOnError),
+				new(struct {
+					A func([]string) error `pos:"a"`
+				}),
+				true,
+			},
+			err: interfaces.SpecErrorf("callbacks cannot be nil"),
 		},
 	}
 

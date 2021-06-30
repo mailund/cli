@@ -132,7 +132,7 @@ func (cmd *Command) Run(args []string) {
 func showHelp(usage func()) func() error {
 	return func() error {
 		usage()
-		os.Exit(0)
+		failure.Success()
 
 		return nil
 	}
@@ -169,7 +169,7 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		cmd.SetUsage(DefaultUsage(cmd))
 	}
 
-	hf := vals.FuncNoValue(showHelp(spec.Usage))
+	hf := vals.FuncNoValue(showHelp(cmd.Usage))
 
 	// There is always a help command when we parse, but the usage won't
 	// show it unless we make it explicit

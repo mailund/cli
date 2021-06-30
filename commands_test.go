@@ -105,6 +105,67 @@ Arguments:
 	if msg != expected {
 		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
 	}
+
+	failure.Success = func() {}
+
+	builder = new(strings.Builder)
+	cmd.SetOutput(builder)
+	cmd.Run([]string{"--help", "bar"})
+
+	msg = space.ReplaceAllString(builder.String(), " ")
+	if msg != expected {
+		t.Errorf("Expected usage message %s but got %s\n", expected, msg)
+	}
+}
+
+func TestNewCommandUsage2(t *testing.T) {
+	type Argv struct {
+		Foo string `flag:"foo" short:"f" descr:"foo"`
+		Bar bool   `flag:"bar" descr:"bar"`
+		Baz func() `flag:"baz" descr:"baz"`
+	}
+
+	argv := &Argv{
+		Baz: func() {},
+	}
+
+	cmd := cli.NewCommand(cli.CommandSpec{
+		Name:  "name",
+		Short: "short",
+		Long:  "long",
+		Init:  func() interface{} { return argv },
+	})
+
+	builder := new(strings.Builder)
+	cmd.SetOutput(builder)
+	cmd.Usage()
+
+	expected := `Usage: name [flags]
+
+	long
+
+
+	Flags:
+	  -f,--foo value
+		foo
+	  --bar [value] (no value = true)
+		bar (default false)
+	  --baz
+		baz
+	  -h,--help
+		show help for name
+`
+
+	msg := builder.String()
+
+	space := regexp.MustCompile(`\s+`)
+	msg = space.ReplaceAllString(msg, " ")
+	expected = space.ReplaceAllString(expected, " ")
+
+	if msg != expected {
+		t.Errorf("unexpected: %s", msg)
+		t.Errorf("unexpected: %s", expected)
+	}
 }
 
 func TestCommandCalled(t *testing.T) {

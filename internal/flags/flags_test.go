@@ -2,6 +2,7 @@ package flags_test
 
 import (
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -460,4 +461,35 @@ func TestNoValProtocolErrors(t *testing.T) {
 	}
 
 	checkProtocol(t, f)
+}
+
+func TestUsage(t *testing.T) {
+	var (
+		f = flags.NewFlagSet("test", failure.ExitOnError)
+		a = vals.IntValue(0)
+		b = vals.BoolValue(false)
+		c = vals.FuncNoValue(func() error { return nil })
+	)
+
+	_ = f.Var(&a, "aa", "a", "an a")
+	_ = f.Var(&b, "bb", "b", "a b")
+	_ = f.Var(&c, "cc", "c", "a c")
+
+	builder := new(strings.Builder)
+	f.SetOutput(builder)
+
+	f.Usage()
+
+	expected := `Flags: -a,--aa value an a (default 0) -b,--bb [value] (no value = true) a b (default false) -c,--cc a c
+	`
+	msg := builder.String()
+
+	space := regexp.MustCompile(`\s+`)
+	msg = space.ReplaceAllString(msg, " ")
+	expected = space.ReplaceAllString(expected, " ")
+
+	if msg != expected {
+		t.Errorf("unexpected: %s", msg)
+		t.Errorf("unexpected: %s", expected)
+	}
 }

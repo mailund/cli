@@ -129,8 +129,6 @@ func (f *FlagSet) PrintDefaults() {
 			defVal = " (default " + defVal + ")"
 		}
 
-		// FIXME: there is a lot more to do here with optional values and short
-		// flags and such...
 		shortFlag, longFlag := "", ""
 
 		if flag.Short != "" {
@@ -152,7 +150,7 @@ func (f *FlagSet) PrintDefaults() {
 		}
 
 		if def, ok := flag.hasDefault(); ok {
-			value = " [value] (default " + def + ")"
+			value = " [value] (no value = " + def + ")"
 		}
 
 		fmt.Fprintf(f.output, "  %s%s%s\n\t%s%s\n", shortFlag, longFlag, value, flag.Desc, defVal)
