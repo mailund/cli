@@ -15,10 +15,6 @@ func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.Struct
 	}
 
 	if tfield.Type.Kind() == reflect.Func {
-		if vfield.IsNil() {
-			return interfaces.SpecErrorf("callbacks cannot be nil")
-		}
-
 		if val := vals.AsCallback(vfield, argv); val != nil {
 			// FIXME: handle long and short flags
 			return cmd.flags.Var(val, name, "", tfield.Tag.Get("descr"))
@@ -66,10 +62,6 @@ func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.Struc
 	}
 
 	if tfield.Type.Kind() == reflect.Func {
-		if vfield.IsNil() {
-			return interfaces.SpecErrorf("callbacks cannot be nil")
-		}
-
 		if val := vals.AsCallback(vfield, argv); val != nil {
 			cmd.params.Var(val, name, tfield.Tag.Get("descr"))
 			return nil
@@ -106,5 +98,5 @@ func connectSpecsFlagsAndParams(cmd *Command, argv interface{}) error {
 		}
 	}
 
-	return nil
+	return validateFlagsAndParams(cmd)
 }

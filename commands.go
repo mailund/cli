@@ -158,10 +158,6 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		if err := connectSpecsFlagsAndParams(cmd, cmd.argv); err != nil {
 			return nil, err
 		}
-
-		if err := validateFlagsAndParams(cmd); err != nil {
-			return nil, err
-		}
 	}
 
 	cmd.SetOutput(os.Stdout)
