@@ -10,14 +10,24 @@ import (
 
 func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
 	if val := vals.AsFlagValue(vfield.Addr()); val != nil {
-		// FIXME: handle long and short flags
-		return cmd.flags.Var(val, name, "", tfield.Tag.Get("descr"))
+		short := tfield.Tag.Get("short")
+
+		if short == "" && len(name) == 1 {
+			short = name
+		}
+
+		return cmd.flags.Var(val, name, short, tfield.Tag.Get("descr"))
 	}
 
 	if tfield.Type.Kind() == reflect.Func {
 		if val := vals.AsCallback(vfield, argv); val != nil {
-			// FIXME: handle long and short flags
-			return cmd.flags.Var(val, name, "", tfield.Tag.Get("descr"))
+			short := tfield.Tag.Get("short")
+
+			if short == "" && len(name) == 1 {
+				short = name
+			}
+
+			return cmd.flags.Var(val, name, short, tfield.Tag.Get("descr"))
 		}
 
 		return interfaces.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)

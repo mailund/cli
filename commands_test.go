@@ -123,7 +123,7 @@ func TestOption(t *testing.T) {
 	called := false
 
 	type argv struct {
-		X int `flag:"x"`
+		X int `flag:"xx" short:"x"`
 	}
 
 	var parsed argv
@@ -142,17 +142,31 @@ func TestOption(t *testing.T) {
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
 
-	cmd.Run([]string{"--x", "foo"}) // wrong type for int
+	cmd.Run([]string{"-x", "foo"}) // wrong type for int
 
 	if called {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, `error parsing flag --x: argument "foo" cannot be parsed as int.`) {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, `error parsing flag -x: argument "foo" cannot be parsed as int.`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 
-	cmd.Run([]string{"--x", "42"}) // correct type for int
+	cmd.Run([]string{"-x", "42"}) // correct type for int
+
+	if !called {
+		t.Error("The command should be called now")
+	}
+
+	if parsed.X != 42 {
+		t.Error("The option wasn't set correctly")
+	}
+
+	// the long flag should work as well...
+	called = false
+	parsed.X = 0
+
+	cmd.Run([]string{"--xx", "42"}) // correct type for int
 
 	if !called {
 		t.Error("The command should be called now")
