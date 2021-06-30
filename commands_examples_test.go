@@ -88,7 +88,7 @@ func ExampleCommand_fourth() {
 	cmd.Run([]string{"0.42", "3.14", "0.3"})
 
 	// Round off the result
-	cmd.Run([]string{"-round", "0.42", "3.14", "0.3"})
+	cmd.Run([]string{"--round", "0.42", "3.14", "0.3"})
 
 	// Output:
 	// Result: 3.860000
@@ -126,7 +126,7 @@ func ExampleCommand_fifth() {
 	cmd.Run([]string{"0.42", "3.14", "0.3"})
 
 	// Turn off rounding
-	cmd.Run([]string{"-round=false", "0.42", "3.14", "0.3"})
+	cmd.Run([]string{"--round=false", "0.42", "3.14", "0.3"})
 
 	// Output:
 	// Result: 4.000000

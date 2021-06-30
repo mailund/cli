@@ -54,7 +54,7 @@ func TestFlagCallbacks(t *testing.T) {
 			Init: func() interface{} { return args },
 		})
 
-	cmd.Run([]string{"-cb=foo", "-cbi=bar"})
+	cmd.Run([]string{"--cb=foo", "--cbi=bar"})
 
 	if x != "foo" {
 		t.Error("x was not set correctly")

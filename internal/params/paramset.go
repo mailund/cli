@@ -1,7 +1,6 @@
 package params
 
 import (
-	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -9,30 +8,6 @@ import (
 
 	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/failure"
-)
-
-type (
-	/* ErrorHandling flags for determining how the argument
-	parser should handle errors.
-
-	The error handling works the same as for the flag package,
-	except that ParamSet's only support two flags:
-
-		- ExitOnError: Terminate the program on error.
-		- ContinueOnError: Report the error as an error object.
-	*/
-	ErrorHandling = flag.ErrorHandling
-)
-
-const (
-	// ContinueOnError means that parsing will return an error
-	// rather than terminate the program.
-	ContinueOnError = flag.ContinueOnError
-	// ExitOnError means that parsing will exit the program
-	// (using os.Exit(2)) if the parser fails.
-	ExitOnError = flag.ExitOnError
-	// PanicOnError means we raise a panic on errors
-	PanicOnError = flag.PanicOnError
 )
 
 // Param holds positional parameter information.
@@ -69,7 +44,7 @@ type ParamSet struct {
 	// the help info.
 	Usage func()
 	// ErrorFlag Controls how we deal with parsing errors
-	ErrorFlag ErrorHandling
+	ErrorFlag failure.ErrorHandling
 
 	params []*Param
 	out    io.Writer
@@ -78,8 +53,8 @@ type ParamSet struct {
 	last *VariadicParam
 }
 
-// SetFlag sets the error handling flag.
-func (p *ParamSet) SetFlag(f ErrorHandling) {
+// SetErrFlag sets the error handling flag.
+func (p *ParamSet) SetErrFlag(f failure.ErrorHandling) {
 	p.ErrorFlag = f
 }
 
@@ -136,7 +111,7 @@ func (p *ParamSet) Variadic() *VariadicParam {
 //   - errflat: Controls the error handling. If ExitOnError, parse
 //     errors will terminate the program (os.Exit(1)); if ContinueOnError
 //     the parsing will return an error instead.
-func NewParamSet(name string, errflag ErrorHandling) *ParamSet {
+func NewParamSet(name string, errflag failure.ErrorHandling) *ParamSet {
 	argset := &ParamSet{
 		Name:      name,
 		ErrorFlag: errflag,
@@ -181,7 +156,7 @@ func (p *ParamSet) Parse(args []string) error {
 	}
 
 	if len(args) < minParams {
-		if p.ErrorFlag == ExitOnError {
+		if p.ErrorFlag == failure.ExitOnError {
 			fmt.Fprintf(p.Output(),
 				"Too few arguments for command '%s'\n\n",
 				p.Name)
@@ -193,7 +168,7 @@ func (p *ParamSet) Parse(args []string) error {
 	}
 
 	if p.last == nil && len(args) > len(p.params) {
-		if p.ErrorFlag == ExitOnError {
+		if p.ErrorFlag == failure.ExitOnError {
 			fmt.Fprintf(p.Output(),
 				"Too many arguments for command '%s'\n\n",
 				p.Name)
@@ -206,7 +181,7 @@ func (p *ParamSet) Parse(args []string) error {
 
 	for i, par := range p.params {
 		if err := par.Value.Set(args[i]); err != nil {
-			if p.ErrorFlag == flag.ExitOnError {
+			if p.ErrorFlag == failure.ExitOnError {
 				fmt.Fprintf(p.Output(), "Error parsing parameter %s='%s', %s.\n",
 					par.Name, args[i], err.Error())
 				failure.Failure()
@@ -219,7 +194,7 @@ func (p *ParamSet) Parse(args []string) error {
 	if p.last != nil {
 		rest := args[len(p.params):]
 		if err := p.last.Value.Set(rest); err != nil {
-			if p.ErrorFlag == ExitOnError {
+			if p.ErrorFlag == failure.ExitOnError {
 				fmt.Fprintf(p.Output(), "Error parsing parameters %s='%v', %s.\n",
 					p.last.Name, rest, err.Error())
 				failure.Failure()

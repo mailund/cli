@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/vals"
 )
 
@@ -37,6 +38,17 @@ func TestCallbacks(t *testing.T) {
 
 	if fv.String() != "" || gv.String() != "" {
 		t.Error("Functions should have empty default strings")
+	}
+
+	if v, ok := fv.(interfaces.Validator); !ok {
+		t.Error("A callback function should be a validator")
+	} else if err := v.Validate(); err != nil {
+		t.Errorf("fv should be valid, but we got error: %s", err)
+	}
+
+	nilFunVal := vals.FuncValue(nil)
+	if err := nilFunVal.Validate(); err == nil {
+		t.Errorf("nil function shouldn't validate")
 	}
 }
 
@@ -79,6 +91,17 @@ func TestBoolCallbacks(t *testing.T) {
 
 	if fv.String() != "" || gv.String() != "" {
 		t.Error("Functions should have empty default strings")
+	}
+
+	if v, ok := fv.(interfaces.Validator); !ok {
+		t.Error("A bool function should be a validator")
+	} else if err := v.Validate(); err != nil {
+		t.Errorf("fv should be valid, but we got error: %s", err)
+	}
+
+	nilFunVal := vals.FuncBoolValue(nil)
+	if err := nilFunVal.Validate(); err == nil {
+		t.Errorf("nil function shouldn't validate")
 	}
 }
 
@@ -151,6 +174,17 @@ func TestVariadicCallbacks(t *testing.T) {
 
 	if y != "foobarbaz" {
 		t.Error("i didn't work")
+	}
+
+	if v, ok := fv.(interfaces.Validator); !ok {
+		t.Error("A variadic function should be a validator")
+	} else if err := v.Validate(); err != nil {
+		t.Errorf("fv should be valid, but we got error: %s", err)
+	}
+
+	nilFunVal := vals.VariadicFuncValue(nil)
+	if err := nilFunVal.Validate(); err == nil {
+		t.Errorf("nil function shouldn't validate")
 	}
 }
 

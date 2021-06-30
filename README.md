@@ -183,11 +183,11 @@ The type `NumArgs` has both a `flag:` and `pos:` tag, creating a boolean flag de
 
 The `Init` function again just creates a `new(NumArgs)`, and the `Action` is a little more complicated, but only because it calculates the sum of multiple values. The way it handles the arguments is the same: it casts the argument to `*NumArgs` and from there it can get both the flag and the float positional arguments.
 
-Run it with `cmd.Run([]string{"0.42", "3.14", "0.3"})` it and will print the sum (3.860000) and with `cmd.Run([]string{"-round", "0.42", "3.14", "0.3"})` and it will round the result (4.000000 — it is a silly example, so I still print it as a float…).
+Run it with `cmd.Run([]string{"0.42", "3.14", "0.3"})` it and will print the sum (3.860000) and with `cmd.Run([]string{"--round", "0.42", "3.14", "0.3"})` and it will round the result (4.000000 — it is a silly example, so I still print it as a float…).
 
 Flags have default values, so how do we deal with that? The short answer is that the default values for flags are the values the struct’s fields have when you give it to `cli`. That means that your `Init` function can set the default values simply by setting the struct’s fields before it returns it.
 
-This is how we could make the `-round` flag default to `true`:
+This is how we could make the `--round` flag default to `true`:
 
 ```go
 cmd := cli.NewCommand(

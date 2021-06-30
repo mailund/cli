@@ -8,20 +8,41 @@ import (
 
 // Function callbacks are special values; we don't need to generate them
 // since it is easier just to write the little code there is in the first place
-type FuncBoolValue func() error
+type (
+	FuncBoolValue     func() error         // Wrapping functions that do not take parameter arguments
+	FuncValue         func(string) error   // Wrapping functions with a single string argument
+	VariadicFuncValue func([]string) error // Wrapping functions with string slice argument
+)
 
 func (f FuncBoolValue) Set(_ string) error { return f() }
 func (f FuncBoolValue) String() string     { return "" }
 func (f FuncBoolValue) IsBoolFlag() bool   { return true }
+func (f FuncBoolValue) Validate() error { // FIXME: the validators are the same, but need generics to join them
+	if f == nil {
+		return interfaces.SpecErrorf("callbacks cannot be nil")
+	}
 
-type FuncValue func(string) error
+	return nil
+}
 
 func (f FuncValue) Set(x string) error { return f(x) }
 func (f FuncValue) String() string     { return "" }
+func (f FuncValue) Validate() error {
+	if f == nil {
+		return interfaces.SpecErrorf("callbacks cannot be nil")
+	}
 
-type VariadicFuncValue func([]string) error
+	return nil
+}
 
 func (f VariadicFuncValue) Set(x []string) error { return f(x) }
+func (f VariadicFuncValue) Validate() error {
+	if f == nil {
+		return interfaces.SpecErrorf("callbacks cannot be nil")
+	}
+
+	return nil
+}
 
 type (
 	BCB   = func()
