@@ -169,8 +169,6 @@ func TestNewCommandUsage2(t *testing.T) {
 }
 
 func TestCommandCalled(t *testing.T) {
-	failure.Failure = func() {}
-
 	called := false
 	cmd := cli.NewCommand(cli.CommandSpec{
 		Action: func(argv interface{}) { called = true },
@@ -442,7 +440,7 @@ func TestPositionalArgsWithSubcommands(t *testing.T) {
 		t.Error("cmd should have been called")
 	}
 
-	if x != "foo" {
+	if x != "foo" { //nolint:goconst // I am not making foo a const
 		t.Errorf("x was set to %s, we expected foo", x)
 	}
 }
