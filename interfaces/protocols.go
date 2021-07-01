@@ -25,12 +25,22 @@ type NoValueFlag interface {
 	NoValueFlag() bool
 }
 
-// BoolFlag is used to indicate that a flag doesn't need a value, but can take one.
+// DefaultValueFlag is used to indicate that a flag doesn't need a value, but can take one.
 // This differs from NoValueFlag where it is an error to provide one. With DefaultValueFlag,
 // the Default() function should return the string that Set() is called with if no value
 // is provided
 type DefaultValueFlag interface {
 	Default() string
+}
+
+// ArgumentDescription provides a value a way to add to the description string for a flag or positional.
+type ArgumentDescription interface {
+	ArgumentDescription(flag bool, descr string) string // Modify or add to the description string
+}
+
+// FlagValueDescription provides a value a way to add to the "value" string of a flag.
+type FlagValueDescription interface {
+	FlagValueDescription() string // Modify or add to the description string
 }
 
 // Validate is an interface that is run after parameters are initialised

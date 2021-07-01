@@ -3,6 +3,7 @@ package params_test
 import (
 	"errors"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -663,5 +664,46 @@ func TestParamVariadic(t *testing.T) {
 
 	if variadic.Desc != "strings" {
 		t.Error("variadic description should be 'strings'")
+	}
+}
+
+type Choice struct {
+	Choice  string
+	Options []string
+}
+
+// We don't use Set() for actual parsing in the text...
+func (c *Choice) Set(x string) error { return nil }
+func (c *Choice) String() string     { return c.Choice }
+
+func (c *Choice) ArgumentDescription(flag bool, descr string) string {
+	return descr + " (choose from " + "{" + strings.Join(c.Options, ",") + "})"
+}
+
+func TestDescriptionHooks(t *testing.T) {
+	var (
+		a = Choice{"A", []string{"A", "B", "C"}}
+		p = params.NewParamSet("test", failure.ExitOnError)
+	)
+
+	p.Var(&a, "foo", "a choice")
+
+	builder := new(strings.Builder)
+	p.SetOutput(builder)
+
+	p.Usage()
+
+	expected := `Arguments:
+	foo a choice (choose from {A,B,C})
+	`
+	msg := builder.String()
+
+	space := regexp.MustCompile(`\s+`)
+	msg = space.ReplaceAllString(msg, " ")
+	expected = space.ReplaceAllString(expected, " ")
+
+	if msg != expected {
+		t.Errorf("unexpected: %s", msg)
+		t.Errorf("unexpected: %s", expected)
 	}
 }

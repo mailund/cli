@@ -152,6 +152,18 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 		flags:       flags.NewFlagSet(spec.Name, failure.ExitOnError),
 		params:      params.NewParamSet(spec.Name, failure.ExitOnError)}
 
+	const linewidth = 70
+	cmd.Long = wordWrap(cmd.Long, linewidth)
+
+	if spec.Usage == nil {
+		cmd.SetUsage(DefaultUsage(cmd))
+	}
+
+	// There is always a help command when we parse, but the usage won't
+	// show it unless we make it explicit
+	hf := vals.FuncNoValue(showHelp(cmd.Usage))
+	_ = cmd.flags.Var(hf, "help", "h", fmt.Sprintf("show help for %s", cmd.Name)) // cannot fail
+
 	if spec.Init != nil {
 		cmd.argv = spec.Init()
 
@@ -161,19 +173,6 @@ func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // 
 	}
 
 	cmd.SetOutput(os.Stdout)
-
-	const linewidth = 70
-	cmd.Long = wordWrap(cmd.Long, linewidth)
-
-	if spec.Usage == nil {
-		cmd.SetUsage(DefaultUsage(cmd))
-	}
-
-	hf := vals.FuncNoValue(showHelp(cmd.Usage))
-
-	// There is always a help command when we parse, but the usage won't
-	// show it unless we make it explicit
-	_ = cmd.flags.Var(hf, "help", "h", fmt.Sprintf("show help for %s", cmd.Name)) // cannot fail
 
 	if len(cmd.Subcommands) > 0 {
 		cmd.subcommands = map[string]*Command{}

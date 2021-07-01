@@ -55,10 +55,10 @@ func TestNewCommandUsage(t *testing.T) { //nolint:funlen // Only too long becaus
 long
 	
 Flags:
-  --foo value
-	set foo
   -h,--help
 	show help for name
+  --foo value
+	set foo
 	
 Arguments:
   bar
@@ -89,10 +89,10 @@ Arguments:
 short
 	
 Flags:
-  --foo value
-	set foo
   -h,--help
 	show help for name
+  --foo value
+	set foo
 	
 Arguments:
   bar
@@ -146,14 +146,14 @@ func TestNewCommandUsage2(t *testing.T) {
 
 
 	Flags:
+	  -h,--help
+		show help for name
 	  -f,--foo value
 		foo
 	  --bar [value] (no value = true)
 		bar (default false)
 	  --baz
 		baz
-	  -h,--help
-		show help for name
 `
 
 	msg := builder.String()

@@ -38,8 +38,8 @@ func (val *Validator) Set(x string) error {
 }
 
 type Args struct {
-	Upper func()    `flag:"u" descr:"sets the validator to upper"`
-	Lower func()    `flag:"l" descr:"sets the validator to lower"`
+	Upper func()    `flag:"" short:"u" descr:"sets the validator to upper"`
+	Lower func()    `flag:"" short:"l" descr:"sets the validator to lower"`
 	Val   Validator `pos:"string" descr:"string we might do something to, if valid"`
 }
 

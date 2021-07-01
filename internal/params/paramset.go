@@ -10,6 +10,14 @@ import (
 	"github.com/mailund/cli/internal/failure"
 )
 
+func paramDescription(val interface{}, descr string) string {
+	if d, ok := val.(interfaces.ArgumentDescription); ok {
+		return d.ArgumentDescription(false, descr)
+	}
+
+	return descr
+}
+
 // Param holds positional parameter information.
 type Param struct {
 	// Name is the short name used for a parameter
@@ -214,7 +222,7 @@ func (p *ParamSet) Parse(args []string) error {
 //   - name: Name of the argument, used when printing usage.
 //   - desc: Description of the argument. Used when printing usage.
 func (p *ParamSet) Var(val interfaces.PosValue, name, desc string) {
-	p.params = append(p.params, &Param{name, desc, val})
+	p.params = append(p.params, &Param{name, paramDescription(val, desc), val})
 }
 
 // VariadicVar install a variadic argument
@@ -227,5 +235,5 @@ func (p *ParamSet) Var(val interfaces.PosValue, name, desc string) {
 //   - min: The minimum number of arguments that the command line must
 //     have for this parameter.
 func (p *ParamSet) VariadicVar(val interfaces.VariadicValue, name, desc string, min int) {
-	p.last = &VariadicParam{Name: name, Desc: desc, Min: min, Value: val}
+	p.last = &VariadicParam{Name: name, Desc: paramDescription(val, desc), Min: min, Value: val}
 }

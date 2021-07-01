@@ -10,6 +10,22 @@ import (
 	"github.com/mailund/cli/internal/failure"
 )
 
+func flagDescription(val interfaces.FlagValue, descr string) string {
+	if d, ok := val.(interfaces.ArgumentDescription); ok {
+		return d.ArgumentDescription(true, descr)
+	}
+
+	return descr
+}
+
+func flagValueDescription(val interfaces.FlagValue, descr string) string {
+	if d, ok := val.(interfaces.FlagValueDescription); ok {
+		return d.FlagValueDescription()
+	}
+
+	return descr
+}
+
 // Flag is the data associated with a single flag.
 type Flag struct {
 	Long     string               // Name is the long flag name
@@ -89,8 +105,11 @@ func (f *FlagSet) Var(value interfaces.FlagValue, long, short, descr string) err
 
 	// Remember the default value as a string; it won't change.
 	flag := &Flag{
-		Long: long, Short: short, Desc: descr,
-		Value: value, DefValue: value.String()}
+		Long:     long,
+		Short:    short,
+		Desc:     flagDescription(value, descr),
+		Value:    value,
+		DefValue: value.String()}
 
 	if long != "" {
 		f.longMap[long] = flag
@@ -143,14 +162,14 @@ func (f *FlagSet) PrintDefaults() {
 			longFlag = "--" + flag.Long
 		}
 
-		value := " value"
+		value := flagValueDescription(flag.Value, "value")
 
 		if flag.noValues() {
 			value = ""
-		}
-
-		if def, ok := flag.hasDefault(); ok {
-			value = " [value] (no value = " + def + ")"
+		} else if def, ok := flag.hasDefault(); ok {
+			value = " [" + value + "] (no value = " + def + ")"
+		} else {
+			value = " " + value
 		}
 
 		fmt.Fprintf(f.output, "  %s%s%s\n\t%s%s\n", shortFlag, longFlag, value, flag.Desc, defVal)

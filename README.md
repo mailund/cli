@@ -15,15 +15,15 @@ This package assumes that command line tools consists of a command, followed by 
 > cmd -x -foo=42 a b c
 ```
 
-The flags, `-x` and `-foo` are optional but with default values, while some of the positional arguments are required, except for potentially a variable number of arguments at the end of a command.
+The flags, `-x` and `--foo` are optional but with default values, while some of the positional arguments are required, except for potentially a variable number of arguments at the end of a command.
 
 For many command line tools, there are also subcommands that looks like
 
 ```sh
-> cmd -x -foo=42 subcmd -y a b c
+> cmd -x --foo=42 subcmd -y a b c
 ```
 
-where `cmd` is the command line tool, the first flags, `-x` and `-foo` are options to that, and then `subcmd` is a command in itself, getting its own flags, `-y` and arguments `a b c`.
+where `cmd` is the command line tool, the first flags, `-x` and `--foo` are options to that, and then `subcmd` is a command in itself, getting its own flags, `-y` and arguments `a b c`.
 
 Go's `flag` package handles flags, and does it very well, but it doesn't handle arguments or subcommands. There are other packages that implement support for subcommands, but not any that I much liked, so I implemented this module to get something more to my taste.
 
@@ -102,12 +102,12 @@ If you call the program with the `-h` or `-help` flag, you get the following usa
 
 ```sh
 > hello -h
-Usage: hello [options]
+Usage: hello [flags]
 
 Prints hello world
 
-Options:
-  -help
+Flags:
+  -h,--help
     show help for hello
 ```
 
@@ -185,7 +185,7 @@ The `Init` function again just creates a `new(NumArgs)`, and the `Action` is a l
 
 Run it with `cmd.Run([]string{"0.42", "3.14", "0.3"})` it and will print the sum (3.860000) and with `cmd.Run([]string{"--round", "0.42", "3.14", "0.3"})` and it will round the result (4.000000 — it is a silly example, so I still print it as a float…).
 
-The string after `flag:` in the tags defines the name of the flag. If it is a single letter, it can be used as both a long flag, `--f` and as a short flag `-f`, but if it is more than one letter, you can only use it as a long flag `--flag`. If you want both a long and a short flag, you can use the `short:` tag, as we did above. By adding `short:"r"`, we install two flags, the long `--round` and the short `-r`. Short flags can only have one letter, but you can combine them, so `-xyz` is equivalent to `-x -y -z`. You cannot combine long flags, but you can provide values to them with the syntax `--flag=value`, where short flags can only take values as `-f value`.
+The string after `flag:` in the tags defines the name of the flag. If it is a single letter, it can be used as both a long flag, `--f` and as a short flag `-f`, but if it is more than one letter, you can only use it as a long flag `--flag`. If you want both a long and a short flag, you can use the `short:` tag, as we did above, and if you only want a short flag, you can provide the `short` tag and leave the name after `flag:` empty. By adding `short:"r"`, we install two flags, the long `--round` and the short `-r`. Short flags can only have one letter, but you can combine them, so `-xyz` is equivalent to `-x -y -z`. You cannot combine long flags, but you can provide values to them with the syntax `--flag=value`, where short flags can only take values as `-f value`.
 
 Flags have default values, so how do we deal with that? The short answer is that the default values for flags are the values the struct’s fields have when you give it to `cli`. That means that your `Init` function can set the default values simply by setting the struct’s fields before it returns it.
 
@@ -337,12 +337,12 @@ compile it into an executable called `calc`, and then on the command line you ca
 
 ```sh
 > calc -h
-Usage: calc [options] cmd ...
+Usage: calc [flags] cmd ...
 
 <long explanation of arithmetic>
 
-Options:
-  -h,-help
+Flags:
+  -h,--help
     show help for calc
 
 Arguments:
@@ -364,12 +364,12 @@ You can get help about the subcommands by providing those with the `-h` flag (or
 
 ```sh
 > calc add -h
-Usage: add [options] x y
+Usage: add [flags] x y
 
 <long description of how addition works>
 
-Options:
-  -help
+Flags:
+  -h,--help
     show help for add
 
 Arguments:
@@ -533,8 +533,8 @@ func (val *Validator) Set(x string) error {
 }
 
 type Args struct {
-  Upper func()    `flag:"u" descr:"sets the validator to upper"`
-  Lower func()    `flag:"l" descr:"sets the validator to lower"`
+  Upper func()    `flag:"" short:"u" descr:"sets the validator to upper"`
+  Lower func()    `flag:"" short:"l" descr:"sets the validator to lower"`
   Val   Validator `pos:"string" descr:"string we might do something to, if valid"`
 }
 
@@ -562,18 +562,23 @@ func main() {
 }
 ```
 
+The two flag's names are empty, `flag:""`, so they only get the short flag names, `-u` and `-l`.
+
 Run it with `-h` to see a usage message:
 
 ```sh
 > validate -h
-Usage: validator [options] string
+Usage: validator [flags] string
 
 Will only accept valid strings
 
-Options:
-  -help show help for validator
-  -l	  sets the validator to lower
-  -u	  sets the validator to upper
+Flags:
+  -h,-help
+  show help for validator
+  -l
+  sets the validator to lower
+  -u
+  sets the validator to upper
 
 Arguments:
   string
@@ -643,34 +648,6 @@ func (val *IntValue) String() string {
 }
 ```
 
-Implement your own type with the right methods, and you can use it as flags and positional arguments in `cli`. For example, if you want a type where you can select one of a small number of options, you could implement:
-
-```go
-type Choice struct {
-  Choice  string
-  Options []string
-}
-
-func (c *Choice) Set(x string) error {
-  for _, v := range c.Options {
-    if v == x {
-      c.Choice = v
-      return nil
-    }
-  }
-
-  return interfaces.ParseErrorf(
-    "%s is not a valid choice, must be in %s", x, "{" + strings.Join(c.Options, ",") + "}")
-}
-
-func (c *Choice) String() string {
-  return c.Choice
-}
-```
-
-This `Choice` type implements the `FlagValue`, so you can use it as both flags and positional arguments.
-
-
 Variadic arguments implement the `VariadicValue` interface:
 
 ```go
@@ -699,6 +676,166 @@ func (vals *VariadicIntValue) Set(xs []string) error {
   return nil
 }
 ```
+
+Implement your own type with the right methods, and you can use it as flags and positional arguments in `cli`. For example, if you want a type where you can select one of a small number of options, you could implement:
+
+```go
+type Choice struct {
+  Choice  string
+  Options []string
+}
+
+func (c *Choice) Set(x string) error {
+  for _, v := range c.Options {
+    if v == x {
+      c.Choice = v
+      return nil
+    }
+  }
+
+  return interfaces.ParseErrorf(
+    "%s is not a valid choice, must be in %s", x, "{" + strings.Join(c.Options, ",") + "}")
+}
+
+func (c *Choice) String() string {
+  return c.Choice
+}
+```
+
+This `Choice` type implements the `FlagValue`, so you can use it as both flags and positional arguments.
+
+We can use it like this:
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/mailund/cli"
+)
+
+type Args struct {
+  A Choice `flag:"" short:"a" descr:"optional choice"`
+  B Choice `pos:"b" descr:"mandatory choice"`
+}
+
+func Init() interface{} {
+  return &Args{
+    A: Choice{"A", []string{"A", "B", "C"}},
+    B: Choice{"B", []string{"A", "B", "C"}},
+  }
+}
+
+func Action(i interface{}) {
+  args, _ := i.(*Args)
+  fmt.Printf("Choice A was %s and choice B was %s\n", args.A.Choice, args.B.Choice)
+}
+
+func main() {
+  cmd := cli.NewCommand(
+    cli.CommandSpec{
+      Name:   "choices",
+      Long:   "Demonstration of the difficult task of making choices.",
+      Init:   Init,
+      Action: Action,
+    })
+
+  cmd.Run(os.Args[1:])
+}
+```
+
+and you will find that if you provide the flag or positional with an invalid choice, you get an error:
+
+```sh
+> choices -a X
+Error parsing flag:  error parsing flag -a: X is not a valid choice, must be in {A,B,C}.
+```
+
+A slightly annoying thing here is, though, that the only way to get information about the valid choices is to provide an  invalid one. You probably want this in the description string, but since the `Choice` value and the description string are independent values, you risk that they end up inconsistent with each other. Ideally, you want the documentation string to get its information from the object you actually use in your arguments.
+
+There are hooks for fixing that as well:
+
+```go
+// ArgumentDescription provides a value a way to add to the description string for a flag or positional.
+type ArgumentDescription interface {
+  ArgumentDescription(flag bool, descr string) string // Modify or add to the description string
+}
+
+// FlagValueDescription provides a value a way to add to the "value" string of a flag.
+type FlagValueDescription interface {
+  FlagValueDescription() string // Modify or add to the description string
+}
+```
+
+The `ArgumentDescription` protocol lets you modify the description, and the `flag` argument tells you if it is the description for a flag or a positional argument (you often want to handle those differently). The `FlagValueDescription` protocol lets you modify the string that comes after the flags in the usage output. By defaul it is `value`, but if you implement this method, you can change that.
+
+We can use those methods to modify how `Choice` objects are printed:
+
+```go
+package main
+
+import (
+  "fmt"
+  "os"
+  "strings"
+
+  "github.com/mailund/cli"
+  "github.com/mailund/cli/interfaces"
+)
+
+type Choice struct {
+  Choice  string
+  Options []string
+}
+
+func (c *Choice) Set(x string) error { /* same as before */ }
+func (c *Choice) String() string     { /* same as before */ }
+
+func (c *Choice) ArgumentDescription(flag bool, descr string) string {
+	if flag {
+		// Don't modify the flag description (we handle it on the value)
+		return descr
+	}
+
+	return descr + " (choose from " + "{" + strings.Join(c.Options, ",") + "})"
+}
+
+func (c *Choice) FlagValueDescription() string {
+	return "{" + strings.Join(c.Options, ",") + "}"
+}
+
+type Args struct { /* same as before */ }
+
+func Init() interface{}    { /* same as before */ }
+func Action(i interface{}) { /* same as before */ }
+func main()                { /* same as before */ }
+```
+
+Run the program with `-h` now, and you get the more informative help:
+
+```
+> choice -h
+Usage: choices [flags] b
+
+Demonstration of the difficult task of making choices.
+
+
+Flags:
+  -h,--help
+  show help for choices
+  -a {A,B,C}
+  optional choice (default A)
+
+Arguments:
+  b
+  mandatory choice (choose from {A,B,C})
+```
+
+
+
 
 For flags, there can be additional constraints. Some flags, for example, should not take arguments. If you don't want them to, then implement the `NoValueFlag` interface:
 

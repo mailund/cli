@@ -493,3 +493,56 @@ func TestUsage(t *testing.T) {
 		t.Errorf("unexpected: %s", expected)
 	}
 }
+
+type Choice struct {
+	Choice  string
+	Options []string
+}
+
+// We don't use Set() for actual parsing in the text...
+func (c *Choice) Set(x string) error { return nil }
+func (c *Choice) String() string     { return c.Choice }
+
+func (c *Choice) ArgumentDescription(flag bool, descr string) string {
+	return descr + " (choose from " + "{" + strings.Join(c.Options, ",") + "})"
+}
+
+func (c *Choice) FlagValueDescription() string {
+	return "{" + strings.Join(c.Options, ",") + "}"
+}
+
+func TestDescriptionHooks(t *testing.T) {
+	var (
+		a = Choice{"A", []string{"A", "B", "C"}}
+		b = Choice{"", []string{"A", "B", "C"}}
+		f = flags.NewFlagSet("test", failure.ExitOnError)
+	)
+
+	if err := f.Var(&a, "foo", "f", "a choice"); err != nil {
+		t.Errorf("Unexpected error: %s", err)
+	}
+
+	if err := f.Var(&b, "bar", "b", "a choice"); err != nil {
+		t.Errorf("Unexpected error: %s", err)
+	}
+
+	builder := new(strings.Builder)
+	f.SetOutput(builder)
+
+	f.Usage()
+
+	expected := `Flags:
+	-f,--foo {A,B,C} a choice (choose from {A,B,C}) (default A)
+	-b,--bar {A,B,C} a choice (choose from {A,B,C})
+	`
+	msg := builder.String()
+
+	space := regexp.MustCompile(`\s+`)
+	msg = space.ReplaceAllString(msg, " ")
+	expected = space.ReplaceAllString(expected, " ")
+
+	if msg != expected {
+		t.Errorf("unexpected: %s", msg)
+		t.Errorf("unexpected: %s", expected)
+	}
+}
