@@ -7,7 +7,7 @@ import (
 	"github.com/mailund/cli"
 )
 
-type CalcArgs struct {
+type calcArgs struct {
 	X int `pos:"x" descr:"first addition argument"`
 	Y int `pos:"y" descr:"first addition argument"`
 }
@@ -18,9 +18,9 @@ func main() {
 			Name:  "add",
 			Short: "adds two floating point arguments",
 			Long:  "<long description of how addition works>",
-			Init:  func() interface{} { return new(CalcArgs) },
+			Init:  func() interface{} { return new(calcArgs) },
 			Action: func(args interface{}) {
-				fmt.Printf("Result: %d\n", args.(*CalcArgs).X+args.(*CalcArgs).Y)
+				fmt.Printf("Result: %d\n", args.(*calcArgs).X+args.(*calcArgs).Y)
 			},
 		})
 
@@ -29,9 +29,9 @@ func main() {
 			Name:  "mult",
 			Short: "multiplies two floating point arguments",
 			Long:  "<long description of how multiplication works>",
-			Init:  func() interface{} { return new(CalcArgs) },
+			Init:  func() interface{} { return new(calcArgs) },
 			Action: func(args interface{}) {
-				fmt.Printf("Result: %d\n", args.(*CalcArgs).X*args.(*CalcArgs).Y)
+				fmt.Printf("Result: %d\n", args.(*calcArgs).X*args.(*calcArgs).Y)
 			},
 		})
 
