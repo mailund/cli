@@ -1,7 +1,6 @@
 package cli_test
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -73,8 +72,6 @@ func TestSet(t *testing.T) {
 	if args.B.Choice != "C" {
 		t.Error("B wasn't set correctly")
 	}
-
-	fmt.Println("next parse...")
 
 	err = cmd.RunError([]string{"-a", "X"})
 	switch err {

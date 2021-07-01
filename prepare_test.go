@@ -27,8 +27,14 @@ func (p *prepareFailure) PrepareValue() error {
 type varPrepareSuccess struct{}
 
 func (p *varPrepareSuccess) Set([]string) error  { return nil }
-func (p *varPrepareSuccess) String() string      { return "" }
 func (p *varPrepareSuccess) PrepareValue() error { return nil }
+
+type varPrepareFailure struct{}
+
+func (p *varPrepareFailure) Set([]string) error { return nil }
+func (p *varPrepareFailure) PrepareValue() error {
+	return interfaces.ParseErrorf("fail")
+}
 
 type success struct {
 	A prepareSuccess    `flag:"flag" short:"f"`
@@ -38,6 +44,14 @@ type success struct {
 
 type flagFail struct {
 	A prepareFailure `flag:"flag" short:"f"`
+}
+
+type posFail struct {
+	A prepareFailure `pos:"pos"`
+}
+
+type varFail struct {
+	A varPrepareFailure `pos:"pos"`
 }
 
 func TestSuccess(t *testing.T) {
@@ -94,4 +108,58 @@ func TestFlagFail(t *testing.T) {
 	if expected, msg := "Error: error in flag -f,--flag: fail.\n", builder.String(); msg != expected {
 		t.Errorf("(2) unexpected msg: %s", msg)
 	}
+}
+
+func checkPosFailure(t *testing.T, cmd *cli.Command) {
+	t.Helper()
+
+	builder := new(strings.Builder)
+	failed := false
+	failure.Failure = func() { failed = true }
+
+	err := cmd.RunError([]string{"a"})
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+
+	if err.Error() != "error in argument pos: fail" {
+		t.Errorf("(1) unexpected err msg: %s", err)
+	}
+
+	cmd.SetOutput(builder)
+	cmd.Run([]string{"a"})
+
+	if !failed {
+		t.Error("Expected a failure")
+	}
+
+	if expected, msg := "Error: error in argument pos: fail.\n", builder.String(); msg != expected {
+		t.Errorf("(2) unexpected msg: %s", msg)
+	}
+}
+
+func TestPosFail(t *testing.T) {
+	cmd, err := cli.NewCommandError(
+		cli.CommandSpec{
+			Init: func() interface{} { return new(posFail) },
+		})
+
+	if err != nil {
+		t.Fatalf("Unexpected construction error: %s", err)
+	}
+
+	checkPosFailure(t, cmd)
+}
+
+func TestVarFail(t *testing.T) {
+	cmd, err := cli.NewCommandError(
+		cli.CommandSpec{
+			Init: func() interface{} { return new(varFail) },
+		})
+
+	if err != nil {
+		t.Fatalf("Unexpected construction error: %s", err)
+	}
+
+	checkPosFailure(t, cmd)
 }
