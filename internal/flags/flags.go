@@ -3,11 +3,9 @@ package flags
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/mailund/cli/interfaces"
-	"github.com/mailund/cli/internal/failure"
 )
 
 func flagDescription(val interfaces.FlagValue, descr string) string {
@@ -37,20 +35,11 @@ type Flag struct {
 
 // FlagSet wraps a set of command line flags.
 type FlagSet struct {
-	Usage func() // Function for printing usage. Can be changed.
-	Name  string // Name of the flag set, usually the same as the command
-
 	flagsList []*Flag
 	longMap   map[string]*Flag
 	shortMap  map[string]*Flag
 
-	args   []string // arguments after flags
-	output io.Writer
-}
-
-// SetOutput changes the output stream for the flag set.
-func (f *FlagSet) SetOutput(w io.Writer) {
-	f.output = w
+	args []string // arguments after flags
 }
 
 // Lookup gets a flag by name
@@ -62,24 +51,16 @@ func (f *FlagSet) Lookup(name string) *Flag {
 	return f.shortMap[name]
 }
 
-// Output returns the output stream for the flag set.
-func (f *FlagSet) Output() io.Writer { return f.output }
-
 // Args returns the remaining arguments after flags are parsed.
 func (f *FlagSet) Args() []string { return f.args }
 
 // NewFlagSet creates a new flag set.
-func NewFlagSet(name string, errHandling failure.ErrorHandling) *FlagSet {
-	f := &FlagSet{
-		Name:      name,
+func NewFlagSet() *FlagSet {
+	return &FlagSet{
 		flagsList: []*Flag{},
 		shortMap:  map[string]*Flag{},
 		longMap:   map[string]*Flag{},
-		output:    os.Stderr,
 	}
-	f.Usage = f.PrintDefaults
-
-	return f
 }
 
 // Var inserts a new flag in the form of a value.
@@ -128,12 +109,12 @@ func (f *FlagSet) Flag(i int) *Flag {
 }
 
 // PrintDefaults print the default usage for the flags.
-func (f *FlagSet) PrintDefaults() {
+func (f *FlagSet) PrintDefaults(w io.Writer) {
 	if f.NFlags() == 0 {
 		return // nothing to print...
 	}
 
-	fmt.Fprintf(f.output, "Flags:\n")
+	fmt.Fprintf(w, "Flags:\n")
 
 	for _, flag := range f.flagsList {
 		defVal := flag.DefValue
@@ -165,7 +146,7 @@ func (f *FlagSet) PrintDefaults() {
 			value = " " + value
 		}
 
-		fmt.Fprintf(f.output, "  %s%s%s\n\t%s%s\n", shortFlag, longFlag, value, flag.Desc, defVal)
+		fmt.Fprintf(w, "  %s%s%s\n\t%s%s\n", shortFlag, longFlag, value, flag.Desc, defVal)
 	}
 }
 

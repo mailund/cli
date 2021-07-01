@@ -7,22 +7,15 @@ import (
 	"testing"
 
 	"github.com/mailund/cli/interfaces"
-	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/internal/flags"
 	"github.com/mailund/cli/internal/vals"
 )
 
 func TestBasicInt(t *testing.T) { //nolint:funlen // test functions are just sometimes long
-	f := flags.NewFlagSet("test", failure.ExitOnError)
+	f := flags.NewFlagSet()
 
 	builder := new(strings.Builder)
-	f.SetOutput(builder)
-
-	if f.Output() != builder {
-		t.Error("somehow the output wasn't set")
-	}
-
-	f.Usage()
+	f.PrintDefaults(builder)
 
 	expected := ""
 	if usageMsg := builder.String(); usageMsg != expected {
@@ -52,13 +45,7 @@ func TestBasicInt(t *testing.T) { //nolint:funlen // test functions are just som
 	}
 
 	builder = new(strings.Builder)
-	f.SetOutput(builder)
-
-	if f.Output() != builder {
-		t.Error("somehow the output wasn't set")
-	}
-
-	f.Usage()
+	f.PrintDefaults(builder)
 
 	expected = "Flags:\n  -i,--int value\n\tinteger (default 0)\n"
 	if usageMsg := builder.String(); usageMsg != expected {
@@ -105,10 +92,6 @@ func TestBasicInt(t *testing.T) { //nolint:funlen // test functions are just som
 		t.Error("This should have been a failure")
 	}
 
-	builder = new(strings.Builder)
-
-	f.SetOutput(builder)
-
 	if err := f.Parse([]string{"-i"}); err == nil {
 		t.Error("We expected a failure here")
 	} else if err.Error() != "flag -i needs an argument" {
@@ -135,7 +118,7 @@ func TestBasicInt(t *testing.T) { //nolint:funlen // test functions are just som
 }
 
 func TestDoubleInsertion(t *testing.T) {
-	f := flags.NewFlagSet("test", failure.ExitOnError)
+	f := flags.NewFlagSet()
 
 	var i vals.IntValue
 
@@ -157,7 +140,7 @@ func TestDoubleInsertion(t *testing.T) {
 }
 
 func TestDashDashTerminate(t *testing.T) {
-	f := flags.NewFlagSet("test", failure.ExitOnError)
+	f := flags.NewFlagSet()
 
 	// '--' stops parsing, so the missing flags foo and bar shouldn't
 	// be a problem.
@@ -171,7 +154,7 @@ func TestDashDashTerminate(t *testing.T) {
 }
 
 func TestBool(t *testing.T) {
-	f := flags.NewFlagSet("test", failure.ExitOnError)
+	f := flags.NewFlagSet()
 
 	var b vals.BoolValue
 
@@ -202,7 +185,7 @@ func TestCallback(t *testing.T) { //nolint:funlen // test functions are just som
 	called := false
 	cb := vals.FuncNoValue(func() error { called = true; return nil })
 
-	f := flags.NewFlagSet("test", failure.ContinueOnError)
+	f := flags.NewFlagSet()
 
 	if err := f.Var(&cb, "foo", "f", "callback"); err != nil {
 		t.Error("didn't expect an error inserting a function value")
@@ -269,7 +252,7 @@ func TestCallback(t *testing.T) { //nolint:funlen // test functions are just som
 }
 
 func TestErrors(t *testing.T) {
-	f := flags.NewFlagSet("test", failure.ContinueOnError)
+	f := flags.NewFlagSet()
 
 	if err := f.Var(nil, "foo", "bar", ""); err == nil {
 		t.Error("The short name is too long")
@@ -300,7 +283,7 @@ func TestErrors(t *testing.T) {
 
 func TestRunOfShort(t *testing.T) {
 	var (
-		f      = flags.NewFlagSet("test", failure.ContinueOnError)
+		f      = flags.NewFlagSet()
 		a      vals.BoolValue
 		b      vals.BoolValue
 		c      vals.IntValue
@@ -393,7 +376,7 @@ func (val *MyIntDef) Set(x string) error {
 }
 
 func TestDefProtocolErrors(t *testing.T) {
-	f := flags.NewFlagSet("test", failure.ContinueOnError)
+	f := flags.NewFlagSet()
 	a := vals.BoolValue(false)
 	i := MyIntDef(0)
 
@@ -417,7 +400,7 @@ func (val *MyIntNoVal) Set(x string) error {
 }
 
 func TestNoValProtocolErrors(t *testing.T) {
-	f := flags.NewFlagSet("test", failure.ContinueOnError)
+	f := flags.NewFlagSet()
 	a := vals.BoolValue(false)
 	i := MyIntNoVal(0)
 
@@ -434,7 +417,7 @@ func TestNoValProtocolErrors(t *testing.T) {
 
 func TestUsage(t *testing.T) {
 	var (
-		f = flags.NewFlagSet("test", failure.ExitOnError)
+		f = flags.NewFlagSet()
 		a = vals.IntValue(0)
 		b = vals.BoolValue(false)
 		c = vals.FuncNoValue(func() error { return nil })
@@ -445,9 +428,7 @@ func TestUsage(t *testing.T) {
 	_ = f.Var(&c, "cc", "c", "a c")
 
 	builder := new(strings.Builder)
-	f.SetOutput(builder)
-
-	f.Usage()
+	f.PrintDefaults(builder)
 
 	expected := `Flags: -a,--aa value an a (default 0) -b,--bb [value] (no value = true) a b (default false) -c,--cc a c
 	`
@@ -484,7 +465,7 @@ func TestDescriptionHooks(t *testing.T) {
 	var (
 		a = Choice{"A", []string{"A", "B", "C"}}
 		b = Choice{"", []string{"A", "B", "C"}}
-		f = flags.NewFlagSet("test", failure.ExitOnError)
+		f = flags.NewFlagSet()
 	)
 
 	if err := f.Var(&a, "foo", "f", "a choice"); err != nil {
@@ -496,9 +477,7 @@ func TestDescriptionHooks(t *testing.T) {
 	}
 
 	builder := new(strings.Builder)
-	f.SetOutput(builder)
-
-	f.Usage()
+	f.PrintDefaults(builder)
 
 	expected := `Flags:
 	-f,--foo {A,B,C} a choice (choose from {A,B,C}) (default A)

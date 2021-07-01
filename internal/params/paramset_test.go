@@ -7,20 +7,16 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/internal/params"
 	"github.com/mailund/cli/internal/vals"
 )
 
 func TestMakeParamSet(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
-	if p.Name != "test" {
-		t.Fatalf("New params set got the wrong name")
-	}
+	_ = params.NewParamSet()
 }
 
 func TestShortUsage(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	if p.ShortUsage() != "" {
 		t.Errorf(`Short usage of empty paramset should be ""`)
 	}
@@ -53,7 +49,7 @@ func TestStringParam(t *testing.T) {
 		y string
 	)
 
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	p.Var((*vals.StringValue)(&x), "x", "")
 	p.Var((*vals.StringValue)(&y), "y", "")
 
@@ -69,12 +65,11 @@ func TestStringParam(t *testing.T) {
 }
 
 func TestPrintDefault(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 
 	// without any arguments, it shouldn't print anything
 	builder := new(strings.Builder)
-	p.SetOutput(builder)
-	p.PrintDefaults()
+	p.PrintDefaults(builder)
 
 	res := builder.String()
 
@@ -82,15 +77,13 @@ func TestPrintDefault(t *testing.T) {
 		t.Errorf("Unexpected usage output: %s\n", res)
 	}
 
-	builder = new(strings.Builder)
-	p.SetOutput(builder)
-
 	var x, y string
 
 	p.Var((*vals.StringValue)(&x), "x", "an x")
 	p.Var((*vals.StringValue)(&y), "y", "a y")
 
-	p.PrintDefaults()
+	builder = new(strings.Builder)
+	p.PrintDefaults(builder)
 
 	res = builder.String()
 	expected := `Arguments:
@@ -107,9 +100,7 @@ func TestPrintDefault(t *testing.T) {
 }
 
 func TestPrintDefaultVariadic(t *testing.T) {
-	builder := new(strings.Builder)
-	p := params.NewParamSet("test", failure.ExitOnError)
-	p.SetOutput(builder)
+	p := params.NewParamSet()
 
 	var (
 		x, y vals.StringValue
@@ -119,7 +110,9 @@ func TestPrintDefaultVariadic(t *testing.T) {
 	p.Var(&x, "x", "an x")
 	p.Var(&y, "y", "a y")
 	p.VariadicVar((*vals.VariadicStringValue)(&z), "...", "arguments for ...", 0)
-	p.PrintDefaults()
+
+	builder := new(strings.Builder)
+	p.PrintDefaults(builder)
 
 	expected := `Arguments:
   x
@@ -137,7 +130,7 @@ func TestPrintDefaultVariadic(t *testing.T) {
 }
 
 func TestParseVariadic(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 
 	var (
 		x    vals.StringValue
@@ -155,52 +148,24 @@ func TestParseVariadic(t *testing.T) {
 	}
 }
 
-func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as many statements as it likes
-	p := params.NewParamSet("test", failure.ExitOnError)
+func TestFailure(t *testing.T) {
+	p := params.NewParamSet()
 	x := vals.StringValue("")
 
 	p.Var(&x, "x", "")
 
-	var failed = false
-
-	failure.Failure = func() { failed = true }
-	builder := new(strings.Builder)
-
-	p.SetOutput(builder)
-
 	err := p.Parse([]string{})
-
-	if !failed {
-		t.Errorf("We expected a parse failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "Too few arguments") {
-		t.Errorf("We got an unexpected error message: %s", errmsg)
-	}
-
 	if err == nil {
-		t.Fatal("expected an error from the parse error")
+		t.Fatal("We expected a parse failure")
 	}
 
 	if err.Error() != "too few arguments" {
-		t.Errorf("Unexpected error message: %s", err.Error())
+		t.Errorf("We got an unexpected error message: %s", err)
 	}
 
-	failed = false
-	builder = new(strings.Builder)
-	p.SetOutput(builder)
 	err = p.Parse([]string{"x", "y"})
-
-	if !failed {
-		t.Errorf("We expected a parse failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "Too many arguments") {
-		t.Errorf("We got an unexpected error message: %s", errmsg)
-	}
-
 	if err == nil {
-		t.Fatal("expected an error from the parse error")
+		t.Fatal("We expected a parse failure")
 	}
 
 	if err.Error() != "too many arguments" {
@@ -212,20 +177,7 @@ func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as 
 
 	p.VariadicVar((*vals.VariadicStringValue)(&y), "y", "", 1)
 
-	failed = false
-	builder = new(strings.Builder)
-
-	p.SetOutput(builder)
-
 	err = p.Parse([]string{"x"}) // too few
-
-	if !failed {
-		t.Errorf("We expected a parse failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "Too few arguments") {
-		t.Errorf("We got an unexpected error message: %s", errmsg)
-	}
 
 	if err == nil {
 		t.Fatal("expected an error from the parse error")
@@ -235,86 +187,21 @@ func TestFailure(t *testing.T) { //nolint:funlen // A test function can have as 
 		t.Errorf("Unexpected error message: %s", err.Error())
 	}
 
-	failed = false
 	err = p.Parse([]string{"x", "y"}) // now we have the minimum
-
-	if failed {
-		t.Errorf("We shouldn't fail")
-	}
-
 	if err != nil {
 		t.Fatal("We shouldn't get an error now")
 	}
 
 	err = p.Parse([]string{"x", "y", "z", "w"}) // and we can have more
-
-	if failed {
-		t.Errorf("We shouldn't fail")
-	}
-
 	if err != nil {
 		t.Fatal("We shouldn't get an error now")
-	}
-}
-
-func TestFailureContinue(t *testing.T) {
-	var failed = false
-
-	failure.Failure = func() { failed = true }
-
-	p := params.NewParamSet("test", failure.ContinueOnError)
-	x := vals.StringValue("")
-
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-	p.Var(&x, "x", "")
-
-	if err := p.Parse([]string{}); err == nil {
-		t.Fatalf("expected an error from the parse error")
-	}
-
-	if errmsg := builder.String(); errmsg != "" {
-		t.Fatalf("We shouldn't have an error message (but have %s)", errmsg)
-	}
-
-	if failed {
-		t.Fatal("We shouldn't terminate now")
-	}
-}
-
-func TestFailureSetFlag(t *testing.T) {
-	var failed = false
-
-	failure.Failure = func() { failed = true }
-
-	// create a paramset that will crash on errors
-	p := params.NewParamSet("test", failure.ExitOnError)
-	x := vals.StringValue("")
-
-	// but then change the flag
-	p.SetErrFlag(failure.ContinueOnError)
-
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-	p.Var(&x, "x", "")
-
-	if err := p.Parse([]string{}); err == nil {
-		t.Fatalf("expected an error from the parse error")
-	}
-
-	if errmsg := builder.String(); errmsg != "" {
-		t.Fatalf("We shouldn't have an error message (but have %s)", errmsg)
-	}
-
-	if failed {
-		t.Fatal("We shouldn't terminate now")
 	}
 }
 
 func TestFuncCallback(t *testing.T) {
 	var called = false
 
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	f := func(arg string) error {
 		if arg != "arg" {
 			t.Errorf("Got unexpected argument for callback")
@@ -335,12 +222,7 @@ func TestFuncCallback(t *testing.T) {
 }
 
 func TestFuncCallbackError(t *testing.T) {
-	failed := false
-	failure.Failure = func() { failed = true }
-
-	p := params.NewParamSet("test", failure.ExitOnError)
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
+	p := params.NewParamSet()
 
 	f := vals.FuncValue(
 		func(arg string) error {
@@ -352,23 +234,10 @@ func TestFuncCallbackError(t *testing.T) {
 	if err := p.Parse([]string{"arg"}); err == nil {
 		t.Fatalf("Expected an error")
 	}
-
-	if !failed {
-		t.Errorf("Expected parse error to trigger a failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "foo failed to bar.\n") {
-		t.Errorf("Unexpected error message %s", errmsg)
-	}
 }
 
 func TestVariadicFuncError(t *testing.T) {
-	failed := false
-	failure.Failure = func() { failed = true }
-
-	p := params.NewParamSet("test", failure.ExitOnError)
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
+	p := params.NewParamSet()
 
 	var (
 		f = func(args []string) error {
@@ -382,51 +251,29 @@ func TestVariadicFuncError(t *testing.T) {
 	if err := p.Parse([]string{"arg"}); err == nil {
 		t.Fatalf("Expected an error")
 	}
-
-	if !failed {
-		t.Errorf("Expected parse error to trigger a failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "foo failed to bar.\n") {
-		t.Errorf("Unexpected error message %s", errmsg)
-	}
 }
 
 func TestInt(t *testing.T) {
-	failed := false
-	failure.Failure = func() { failed = true }
-
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	i := vals.IntValue(0)
 	p.Var(&i, "i", "int")
 
-	_ = p.Parse([]string{"42"})
+	err := p.Parse([]string{"42"})
+	if err != nil {
+		t.Fatalf("unexpected error %s", err)
+	}
 
 	if i != 42 {
 		t.Errorf("Parse error, i is %d", i)
 	}
 
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-
 	if err := p.Parse([]string{"foo"}); err == nil {
 		t.Error("Expected an error")
-	}
-
-	if !failed {
-		t.Error("Expected to fail")
-	}
-
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `Error parsing parameter i='foo'`) {
-		t.Errorf("Unexpected error message %s", errmsg)
 	}
 }
 
 func TestBool(t *testing.T) {
-	failed := false
-	failure.Failure = func() { failed = true }
-
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	b := vals.BoolValue(false)
 	p.Var(&b, "var", "")
 
@@ -454,54 +301,36 @@ func TestBool(t *testing.T) {
 		t.Errorf("Parse error, val is %t", b)
 	}
 
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-
 	if err := p.Parse([]string{"foo"}); err == nil {
 		t.Error("Expected an error")
-	}
-
-	if !failed {
-		t.Error("Expected to fail")
-	}
-
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `Error parsing parameter var='foo'`) {
-		t.Errorf("Unexpected error message %s", errmsg)
+	} else if err.Error() != "error parsing parameter var='foo'" {
+		t.Errorf("unexpected error: %s", err)
 	}
 }
 
 func TestFloat(t *testing.T) {
-	failed := false
-	failure.Failure = func() { failed = true }
-
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	x := vals.Float64Value(0.0)
 	p.Var(&x, "var", "")
 
-	_ = p.Parse([]string{"3.14"})
+	err := p.Parse([]string{"3.14"})
+	if err != nil {
+		t.Fatalf("we didn't expect an error: %s", err)
+	}
 
 	if x != 3.14 {
 		t.Errorf("Parse error, x is %f", x)
 	}
 
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-
 	if err := p.Parse([]string{"foo"}); err == nil {
 		t.Error("Expected an error")
-	}
-
-	if !failed {
-		t.Error("Expected to fail")
-	}
-
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `Error parsing parameter var='foo'`) {
-		t.Errorf("Unexpected error message %s", errmsg)
+	} else if err.Error() != "error parsing parameter var='foo'" {
+		t.Errorf("unexpected error: %s", err)
 	}
 }
 
 func TestVariadicStrings(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	x := vals.StringValue("")
 	args := []string{"x", "y", "z"}
 	res := []string{}
@@ -521,7 +350,7 @@ func TestVariadicStrings(t *testing.T) {
 }
 
 func TestVariadicBools(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	res := []bool{}
 
 	p.VariadicVar((*vals.VariadicBoolValue)(&res), "x [x...]", "", 0)
@@ -529,30 +358,24 @@ func TestVariadicBools(t *testing.T) {
 	args := []string{"1", "true", "0", "false", "t", "FALSE"}
 	expected := []bool{true, true, false, false, true, false}
 
-	_ = p.Parse(args)
+	err := p.Parse(args)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
 
 	if !reflect.DeepEqual(res, expected) {
 		t.Errorf("Variadic argument got %v, expected %v", res, expected)
 	}
 
 	// Testing errors
-	failed := false
-	failure.Failure = func() { failed = true }
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-	_ = p.Parse([]string{"foo", "bar"})
-
-	if !failed {
+	err = p.Parse([]string{"foo", "bar"})
+	if err == nil {
 		t.Error("Expected a parser failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as bool.\n") {
-		t.Errorf("Unexpected error message: '%s'\n", errmsg)
 	}
 }
 
 func TestVariadicInts(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	res := []int{}
 
 	p.VariadicVar((*vals.VariadicIntValue)(&res), "x [x...]", "", 0)
@@ -560,31 +383,24 @@ func TestVariadicInts(t *testing.T) {
 	args := []string{"1", "2", "3", "-4", "0x05", "6"}
 	expected := []int{1, 2, 3, -4, 5, 6}
 
-	_ = p.Parse(args)
+	err := p.Parse(args)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
 
 	if !reflect.DeepEqual(res, expected) {
 		t.Errorf("Variadic argument got %v, expected %v", res, expected)
 	}
 
 	// Testing errors
-	failed := false
-	failure.Failure = func() { failed = true }
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-
-	_ = p.Parse([]string{"foo", "bar"})
-
-	if !failed {
+	err = p.Parse([]string{"foo", "bar"})
+	if err == nil {
 		t.Error("Expected a parser failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as int.\n") {
-		t.Errorf("Unexpected error message: '%s'\n", errmsg)
 	}
 }
 
 func TestVariadicFloats(t *testing.T) {
-	p := params.NewParamSet("test", failure.ExitOnError)
+	p := params.NewParamSet()
 	res := []float64{}
 
 	p.VariadicVar((*vals.VariadicFloat64Value)(&res), "x [x...]", "", 0)
@@ -592,30 +408,24 @@ func TestVariadicFloats(t *testing.T) {
 	args := []string{"1", "0.2", "3e4", "-4.1", "3.14"}
 	expected := []float64{1.0, 0.2, 3e4, -4.1, 3.14}
 
-	_ = p.Parse(args)
+	err := p.Parse(args)
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
 
 	if !reflect.DeepEqual(res, expected) {
 		t.Errorf("Variadic argument got %v, expected %v", res, expected)
 	}
 
 	// Testing errors
-	failed := false
-	failure.Failure = func() { failed = true }
-	builder := new(strings.Builder)
-	p.SetOutput(builder)
-	_ = p.Parse([]string{"foo", "bar"})
-
-	if !failed {
-		t.Error("Expected a parser failure")
-	}
-
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "cannot parse 'foo' as float64.\n") {
-		t.Errorf("Unexpected error message: '%s'\n", errmsg)
+	err = p.Parse([]string{"foo", "bar"})
+	if err == nil {
+		t.Error("expected an error")
 	}
 }
 
 func TestParamVariadic(t *testing.T) {
-	p := params.NewParamSet("p", failure.ExitOnError)
+	p := params.NewParamSet()
 
 	var (
 		i vals.IntValue
@@ -683,15 +493,13 @@ func (c *Choice) ArgumentDescription(flag bool, descr string) string {
 func TestDescriptionHooks(t *testing.T) {
 	var (
 		a = Choice{"A", []string{"A", "B", "C"}}
-		p = params.NewParamSet("test", failure.ExitOnError)
+		p = params.NewParamSet()
 	)
 
 	p.Var(&a, "foo", "a choice")
 
 	builder := new(strings.Builder)
-	p.SetOutput(builder)
-
-	p.Usage()
+	p.PrintDefaults(builder)
 
 	expected := `Arguments:
 	foo a choice (choose from {A,B,C})

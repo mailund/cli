@@ -30,6 +30,8 @@ var cmd = cli.NewCommand(
 	})
 
 func TestUsage(t *testing.T) {
+	failure.Failure = func() {}
+
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
 
@@ -84,11 +86,16 @@ func TestSet(t *testing.T) {
 		}
 	}
 
+	failed := false
+	failure.Failure = func() { failed = true }
 	builder := new(strings.Builder)
+
 	cmd.SetOutput(builder)
-	cmd.SetErrorFlag(failure.ContinueOnError)
-	fmt.Println("next parse...")
 	cmd.Run([]string{"-a", "X"})
+
+	if !failed {
+		t.Error("we expected to fail")
+	}
 
 	expected := "Error: parsing flag -a: X is not a valid choice, must be in {A,B,C}.\n"
 	msg := builder.String()

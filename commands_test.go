@@ -169,6 +169,8 @@ func TestNewCommandUsage2(t *testing.T) {
 }
 
 func TestCommandCalled(t *testing.T) {
+	failure.Failure = func() {}
+
 	called := false
 	cmd := cli.NewCommand(cli.CommandSpec{
 		Action: func(argv interface{}) { called = true },
@@ -180,7 +182,7 @@ func TestCommandCalled(t *testing.T) {
 	}
 }
 
-func TestOption(t *testing.T) { //nolint:funlen // test functions can be long
+func TestOption(t *testing.T) {
 	called := false
 
 	type argv struct {
@@ -208,7 +210,6 @@ func TestOption(t *testing.T) { //nolint:funlen // test functions can be long
 
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
-	cmd.SetErrorFlag(failure.ContinueOnError)
 	cmd.Run([]string{"-x", "foo"}) // wrong type for int
 
 	if called {
@@ -286,7 +287,7 @@ func TestParam(t *testing.T) {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `Error parsing parameter x='foo'`) {
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, `Error: error parsing parameter x='foo'.`) {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 

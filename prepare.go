@@ -1,10 +1,7 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/mailund/cli/interfaces"
-	"github.com/mailund/cli/internal/failure"
 )
 
 func prepareFlagsAndParams(cmd *Command) error {
@@ -34,13 +31,7 @@ func prepareFlagsAndParams(cmd *Command) error {
 	for i := 0; i < cmd.params.NParams(); i++ {
 		if v, ok := cmd.params.Param(i).Value.(interfaces.Prepare); ok {
 			if err := v.PrepareValue(); err != nil {
-				fmt.Fprintf(cmd.Output(), "error in argument %s: %s", cmd.params.Param(i).Name, err)
-
-				if cmd.errf == failure.ExitOnError {
-					failure.Failure()
-				}
-
-				return err
+				return interfaces.ParseErrorf("error in argument %s: %s", cmd.params.Param(i).Name, err)
 			}
 		}
 	}
@@ -48,13 +39,7 @@ func prepareFlagsAndParams(cmd *Command) error {
 	if vv := cmd.params.Variadic(); vv != nil {
 		if v, ok := vv.Value.(interfaces.Prepare); ok {
 			if err := v.PrepareValue(); err != nil {
-				fmt.Fprintf(cmd.Output(), "error in argument %s: %s", cmd.params.Variadic().Name, err)
-
-				if cmd.errf == failure.ExitOnError {
-					failure.Failure()
-				}
-
-				return err
+				return interfaces.ParseErrorf("error in argument %s: %s", cmd.params.Variadic().Name, err)
 			}
 		}
 	}

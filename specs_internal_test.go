@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/mailund/cli/interfaces"
-	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/internal/flags"
 	"github.com/mailund/cli/internal/params"
 )
@@ -123,8 +122,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "No flags or arguments",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct{}),
 				true,
 			},
@@ -132,8 +131,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "String flag",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					var x struct {
 						Foo string `flag:"foo" short:"f" descr:"foobar"`
@@ -149,8 +148,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Int flag",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					var x struct {
 						Foo int `flag:"i" descr:"foobar"`
@@ -166,8 +165,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Int and string params",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					var x struct {
 						Foo int    `pos:"foo" descr:"foo"`
@@ -185,8 +184,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "All currently supported types",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					F1 int     `flag:"f1"`
 					F2 bool    `flag:"f2"`
@@ -205,8 +204,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Unsupported flag type",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					B []bool `flag:"b"`
 				}),
@@ -217,8 +216,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Unsupported parameter type",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					B uintptr `pos:"b"`
 				}),
@@ -230,8 +229,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Variadic bool",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					X []bool `pos:"x"`
 				}),
@@ -241,8 +240,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Variadic int",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					X []int `pos:"x" min:"2"`
 				}),
@@ -252,8 +251,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Variadic float",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					X []float64 `pos:"x"`
 				}),
@@ -263,8 +262,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Variadic string",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					X []string `pos:"x" descr:"foo"`
 				}),
@@ -274,8 +273,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Variadic with invalid min",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					X []string `pos:"x" descr:"foo" min:"not an int"`
 				}),
@@ -287,8 +286,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "More than one variadic",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					A []int `pos:"a"`
 					B []int `pos:"b"`
@@ -301,8 +300,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Flag callback nil",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					A func(string) error `flag:"a"`
 				}),
@@ -313,8 +312,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Flag callback wrong signature 1",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					x := new(struct {
 						A func(int) error `flag:"a"`
@@ -329,8 +328,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Flag callback wrong signature 2",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					x := new(struct {
 						A func(string) `flag:"a"`
@@ -345,8 +344,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Flag callbacks non-nil",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					var f = func(x string) error { return nil }
 					var x = struct {
@@ -370,8 +369,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Param callback nil",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					A func(string) error `pos:"a"`
 				}),
@@ -382,8 +381,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Params callback wrong signature 1",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					x := new(struct {
 						A func(int) error `pos:"a"`
@@ -398,8 +397,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Params callback wrong signature 2",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					x := new(struct {
 						A func(string) `pos:"a"`
@@ -414,8 +413,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Param callbacks non-nil",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				func() interface{} {
 					var f = func(x string) error { return nil }
 					var x = struct {
@@ -439,8 +438,8 @@ func Test_prepareSpecs(t *testing.T) { //nolint:funlen // Test functions can be 
 		{
 			name: "Variadic callback nil",
 			args: args{
-				flags.NewFlagSet("test", failure.ExitOnError),
-				params.NewParamSet("test", failure.ExitOnError),
+				flags.NewFlagSet(),
+				params.NewParamSet(),
 				new(struct {
 					A func([]string) error `pos:"a"`
 				}),

@@ -42,7 +42,6 @@ type CommandSpec struct {
 type Command struct {
 	CommandSpec
 
-	errf   failure.ErrorHandling
 	flags  *flags.FlagSet
 	params *params.ParamSet
 	argv   interface{}
@@ -60,25 +59,11 @@ func (cmd *Command) Output() io.Writer { return cmd.out }
 // SetOutput sets the writer that options, arguments, and the command will
 // write usage information to.
 func (cmd *Command) SetOutput(out io.Writer) {
-	cmd.flags.SetOutput(out)
-	cmd.params.SetOutput(out)
-
 	for _, sub := range cmd.Subcommands {
 		sub.SetOutput(out)
 	}
 
 	cmd.out = out
-}
-
-// SetErrorFlag recursively sets error handling flags on the command's flags
-// and params, and on all subcommands this command holds.
-func (cmd *Command) SetErrorFlag(f failure.ErrorHandling) {
-	cmd.errf = f
-	cmd.params.SetErrFlag(f)
-
-	for _, subcmd := range cmd.Subcommands {
-		subcmd.SetErrorFlag(f)
-	}
 }
 
 // Usage prints usage information about a command.
@@ -89,8 +74,6 @@ func (cmd *Command) Usage() { cmd.CommandSpec.Usage() }
 // that spec, not the flags or parameters. You
 // should almost always use SetUsage() instead.
 func (cmd *Command) SetUsage(usage func()) {
-	cmd.flags.Usage = usage
-	cmd.params.Usage = usage
 	cmd.CommandSpec.Usage = usage
 }
 
@@ -140,10 +123,7 @@ func (cmd *Command) RunError(args []string) error {
 func (cmd *Command) Run(args []string) {
 	if err := cmd.RunError(args); err != nil {
 		fmt.Fprintf(cmd.out, "Error: %s.\n", err)
-
-		if cmd.errf == failure.ExitOnError {
-			failure.Failure()
-		}
+		failure.Failure()
 	}
 }
 
@@ -167,9 +147,8 @@ func showHelp(usage func()) func() error {
 func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // specs are large but only copied when we create a command
 	cmd := &Command{
 		CommandSpec: spec,
-		errf:        failure.ExitOnError,
-		flags:       flags.NewFlagSet(spec.Name, failure.ExitOnError),
-		params:      params.NewParamSet(spec.Name, failure.ExitOnError)}
+		flags:       flags.NewFlagSet(),
+		params:      params.NewParamSet()}
 
 	const linewidth = 70
 	cmd.Long = wordWrap(cmd.Long, linewidth)
@@ -238,10 +217,10 @@ func DefaultUsage(cmd *Command) func() {
 		}
 
 		// Print options and arguments at the bottom.
-		fmt.Fprintf(cmd.Output(), "\n")
-		cmd.flags.PrintDefaults()
-		fmt.Fprintf(cmd.Output(), "\n")
-		cmd.params.PrintDefaults()
+		fmt.Fprintf(cmd.out, "\n")
+		cmd.flags.PrintDefaults(cmd.out)
+		fmt.Fprintf(cmd.out, "\n")
+		cmd.params.PrintDefaults(cmd.out)
 
 		if len(cmd.subcommands) > 0 {
 			fmt.Fprintf(cmd.Output(), "\nCommands:\n")

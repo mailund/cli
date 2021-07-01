@@ -3,11 +3,9 @@ package params
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/mailund/cli/interfaces"
-	"github.com/mailund/cli/internal/failure"
 )
 
 func paramDescription(val interface{}, descr string) string {
@@ -45,52 +43,24 @@ type VariadicParam struct {
 // commandline tool and parsers for parsing commandline
 // arguments.
 type ParamSet struct {
-	// Name is a name used when printing usage information
-	// for a parameter set.
-	Name string
-	// Usage is a function you can assign to for changing
-	// the help info.
-	Usage func()
-	// ErrorFlag Controls how we deal with parsing errors
-	ErrorFlag failure.ErrorHandling
-
 	params []*Param
-	out    io.Writer
-
-	// last parameter, used for variadic arguments
-	last *VariadicParam
+	last   *VariadicParam
 }
-
-// SetErrFlag sets the error handling flag.
-func (p *ParamSet) SetErrFlag(f failure.ErrorHandling) {
-	p.ErrorFlag = f
-}
-
-// SetOutput specifies where usage output and error messages should
-// be written to.
-//
-// Parameters:
-//   - out: a writer object. The default, if you do not set a new
-//     variable is os.Stderr.
-func (p *ParamSet) SetOutput(out io.Writer) { p.out = out }
-
-// Output returns the output stream where messages are written to
-func (p *ParamSet) Output() io.Writer { return p.out }
 
 // PrintDefaults prints a description of the parameters
-func (p *ParamSet) PrintDefaults() {
+func (p *ParamSet) PrintDefaults(w io.Writer) {
 	if p.NParams() == 0 && p.last == nil {
 		return // nothing to print...
 	}
 
-	fmt.Fprintf(p.Output(), "Arguments:\n")
+	fmt.Fprintf(w, "Arguments:\n")
 
 	for _, par := range p.params {
-		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", par.Name, par.Desc)
+		fmt.Fprintf(w, "  %s\n\t%s\n", par.Name, par.Desc)
 	}
 
 	if p.last != nil {
-		fmt.Fprintf(p.Output(), "  %s\n\t%s\n", p.last.Name, p.last.Desc)
+		fmt.Fprintf(w, "  %s\n\t%s\n", p.last.Name, p.last.Desc)
 	}
 }
 
@@ -112,22 +82,8 @@ func (p *ParamSet) Variadic() *VariadicParam {
 }
 
 // NewParamSet creates a new parameter set.
-//
-// Parameters:
-//   - name: The name for the parameter set. Used when printing
-//     usage and error information.
-//   - errflat: Controls the error handling. If ExitOnError, parse
-//     errors will terminate the program (os.Exit(1)); if ContinueOnError
-//     the parsing will return an error instead.
-func NewParamSet(name string, errflag failure.ErrorHandling) *ParamSet {
-	argset := &ParamSet{
-		Name:      name,
-		ErrorFlag: errflag,
-		params:    []*Param{},
-		out:       os.Stderr}
-	argset.Usage = argset.PrintDefaults
-
-	return argset
+func NewParamSet() *ParamSet {
+	return &ParamSet{params: []*Param{}}
 }
 
 // ShortUsage returns a string used for printing the usage
@@ -164,37 +120,15 @@ func (p *ParamSet) Parse(args []string) error {
 	}
 
 	if len(args) < minParams {
-		if p.ErrorFlag == failure.ExitOnError {
-			fmt.Fprintf(p.Output(),
-				"Too few arguments for command '%s'\n\n",
-				p.Name)
-			p.Usage()
-			failure.Failure()
-		}
-
 		return interfaces.ParseErrorf("too few arguments")
 	}
 
 	if p.last == nil && len(args) > len(p.params) {
-		if p.ErrorFlag == failure.ExitOnError {
-			fmt.Fprintf(p.Output(),
-				"Too many arguments for command '%s'\n\n",
-				p.Name)
-			p.Usage()
-			failure.Failure()
-		}
-
 		return interfaces.ParseErrorf("too many arguments")
 	}
 
 	for i, par := range p.params {
 		if err := par.Value.Set(args[i]); err != nil {
-			if p.ErrorFlag == failure.ExitOnError {
-				fmt.Fprintf(p.Output(), "Error parsing parameter %s='%s', %s.\n",
-					par.Name, args[i], err.Error())
-				failure.Failure()
-			}
-
 			return interfaces.ParseErrorf("error parsing parameter %s='%s'", par.Name, args[i])
 		}
 	}
@@ -202,12 +136,6 @@ func (p *ParamSet) Parse(args []string) error {
 	if p.last != nil {
 		rest := args[len(p.params):]
 		if err := p.last.Value.Set(rest); err != nil {
-			if p.ErrorFlag == failure.ExitOnError {
-				fmt.Fprintf(p.Output(), "Error parsing parameters %s='%v', %s.\n",
-					p.last.Name, rest, err.Error())
-				failure.Failure()
-			}
-
 			return interfaces.ParseErrorf("error parsing parameters %s='%v'", p.last.Name, rest)
 		}
 	}
