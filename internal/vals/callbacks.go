@@ -9,15 +9,17 @@ import (
 // Function callbacks are special values; we don't need to generate them
 // since it is easier just to write the little code there is in the first place
 type (
-	FuncNoValue       func() error         // Wrapping functions that do not take parameter arguments
-	FuncValue         func(string) error   // Wrapping functions with a single string argument
-	VariadicFuncValue func([]string) error // Wrapping functions with string slice argument
+	FuncNoValue       func() error         // FuncNoValue wraps functions that do not take parameter arguments
+	FuncValue         func(string) error   // FuncValue wraps functions with a single string argument
+	VariadicFuncValue func([]string) error // VariadicFuncValue wraps functions with string slice argument
 )
 
-func (f FuncNoValue) Set(_ string) error { return f() }
-func (f FuncNoValue) String() string     { return "" }
-func (f FuncNoValue) NoValueFlag() bool  { return true }
-func (f FuncNoValue) Validate() error { // FIXME: the validators are the same, but need generics to join them
+func (f FuncNoValue) Set(_ string) error { return f() }  // Set implements the PosValue/FlagValue interface
+func (f FuncNoValue) String() string     { return "" }   // String implements the FlagValue interface
+func (f FuncNoValue) NoValueFlag() bool  { return true } // NoValueFlag implements the no values interface
+
+// Validate implements the validator interface and checks that callbacks are not nil.
+func (f FuncNoValue) Validate(bool) error { // FIXME: the validators are the same, but need generics to join them
 	if f == nil {
 		return interfaces.SpecErrorf("callbacks cannot be nil")
 	}
@@ -27,7 +29,7 @@ func (f FuncNoValue) Validate() error { // FIXME: the validators are the same, b
 
 func (f FuncValue) Set(x string) error { return f(x) }
 func (f FuncValue) String() string     { return "" }
-func (f FuncValue) Validate() error {
+func (f FuncValue) Validate(bool) error {
 	if f == nil {
 		return interfaces.SpecErrorf("callbacks cannot be nil")
 	}
@@ -36,7 +38,7 @@ func (f FuncValue) Validate() error {
 }
 
 func (f VariadicFuncValue) Set(x []string) error { return f(x) }
-func (f VariadicFuncValue) Validate() error {
+func (f VariadicFuncValue) Validate(bool) error {
 	if f == nil {
 		return interfaces.SpecErrorf("callbacks cannot be nil")
 	}

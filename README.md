@@ -882,14 +882,16 @@ The `Validator` interface gives hook for that:
 
 ```go
 type Validator interface {
-  Validate() error // Should return nil if everything is fine, or an error otherwise
+  Validate(flag bool) error // Should return nil if everything is fine, or an error otherwise
 }
 ```
 
-Flags and parameters that implement the interface will have their `Validate() error` method called as soon as a command is created. Callbacks cannot be `nil` (that will certainly crash the program when we call them), and functions in `cli` check this using a `Validator` function:
+The `flag` boolean indicates if we are validating a flag rather than a positional argument. We sometimes want to distinguish between the two, since positional and variadic argumentns will always be initialised throug their `Set(string)` method when we parse a command-line, while flags might have to rely on a default value. Thus, for flags we might want to validate that the default is valid, which we do not need to for other arguments.
+
+Flags and parameters that implement the interface will have their `Validate(bool) error` method called as soon as a command is created. Callbacks cannot be `nil` (that will certainly crash the program when we call them), and functions in `cli` check this using a `Validator` function:
 
 ```go
-func (f FuncNoValue) Validate() error {
+func (f FuncNoValue) Validate(bool) error {
   if f == nil {
     return interfaces.SpecErrorf("callbacks cannot be nil")
   }
@@ -897,3 +899,5 @@ func (f FuncNoValue) Validate() error {
   return nil
 }
 ```
+
+We don't need to distinguish between flags and other parameters for callbacks, because the callback will be called regardless, and can never be nil.

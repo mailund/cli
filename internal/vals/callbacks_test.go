@@ -42,12 +42,12 @@ func TestCallbacks(t *testing.T) {
 
 	if v, ok := fv.(interfaces.Validator); !ok {
 		t.Error("A callback function should be a validator")
-	} else if err := v.Validate(); err != nil {
+	} else if err := v.Validate(true); err != nil {
 		t.Errorf("fv should be valid, but we got error: %s", err)
 	}
 
 	nilFunVal := vals.FuncValue(nil)
-	if err := nilFunVal.Validate(); err == nil {
+	if err := nilFunVal.Validate(true); err == nil {
 		t.Errorf("nil function shouldn't validate")
 	}
 }
@@ -95,12 +95,12 @@ func TestBoolCallbacks(t *testing.T) {
 
 	if v, ok := fv.(interfaces.Validator); !ok {
 		t.Error("A bool function should be a validator")
-	} else if err := v.Validate(); err != nil {
+	} else if err := v.Validate(true); err != nil {
 		t.Errorf("fv should be valid, but we got error: %s", err)
 	}
 
 	nilFunVal := vals.FuncNoValue(nil)
-	if err := nilFunVal.Validate(); err == nil {
+	if err := nilFunVal.Validate(true); err == nil {
 		t.Errorf("nil function shouldn't validate")
 	}
 }
@@ -178,12 +178,12 @@ func TestVariadicCallbacks(t *testing.T) {
 
 	if v, ok := fv.(interfaces.Validator); !ok {
 		t.Error("A variadic function should be a validator")
-	} else if err := v.Validate(); err != nil {
+	} else if err := v.Validate(true); err != nil {
 		t.Errorf("fv should be valid, but we got error: %s", err)
 	}
 
 	nilFunVal := vals.VariadicFuncValue(nil)
-	if err := nilFunVal.Validate(); err == nil {
+	if err := nilFunVal.Validate(true); err == nil {
 		t.Errorf("nil function shouldn't validate")
 	}
 }

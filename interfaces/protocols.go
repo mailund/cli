@@ -45,7 +45,7 @@ type FlagValueDescription interface {
 
 // Validate is an interface that is run after parameters are initialised
 // but before they are parsed, and can be used to check consistency
-// of default values
+// of default values. The flag is true if validating a flag and false otherwise.
 type Validator interface {
-	Validate() error // Should return nil if everything is fine, or an error otherwise
+	Validate(flag bool) error // Should return nil if everything is fine, or an error otherwise
 }

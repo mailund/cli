@@ -7,7 +7,7 @@ import (
 func validateFlagsAndParams(cmd *Command) error {
 	for i := 0; i < cmd.flags.NFlags(); i++ {
 		if v, ok := cmd.flags.Flag(i).Value.(interfaces.Validator); ok {
-			if err := v.Validate(); err != nil {
+			if err := v.Validate(true); err != nil {
 				return err
 			}
 		}
@@ -15,7 +15,7 @@ func validateFlagsAndParams(cmd *Command) error {
 
 	for i := 0; i < cmd.params.NParams(); i++ {
 		if v, ok := cmd.params.Param(i).Value.(interfaces.Validator); ok {
-			if err := v.Validate(); err != nil {
+			if err := v.Validate(false); err != nil {
 				return err
 			}
 		}
@@ -23,7 +23,7 @@ func validateFlagsAndParams(cmd *Command) error {
 
 	if vv := cmd.params.Variadic(); vv != nil {
 		if v, ok := vv.Value.(interfaces.Validator); ok {
-			if err := v.Validate(); err != nil {
+			if err := v.Validate(false); err != nil {
 				return err
 			}
 		}
