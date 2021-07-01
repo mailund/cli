@@ -44,14 +44,8 @@ type FlagSet struct {
 	longMap   map[string]*Flag
 	shortMap  map[string]*Flag
 
-	args          []string // arguments after flags
-	errorHandling failure.ErrorHandling
-	output        io.Writer
-}
-
-// SetErrFlag sets the error handling value
-func (f *FlagSet) SetErrFlag(eh failure.ErrorHandling) {
-	f.errorHandling = eh
+	args   []string // arguments after flags
+	output io.Writer
 }
 
 // SetOutput changes the output stream for the flag set.
@@ -77,12 +71,11 @@ func (f *FlagSet) Args() []string { return f.args }
 // NewFlagSet creates a new flag set.
 func NewFlagSet(name string, errHandling failure.ErrorHandling) *FlagSet {
 	f := &FlagSet{
-		Name:          name,
-		errorHandling: errHandling,
-		flagsList:     []*Flag{},
-		shortMap:      map[string]*Flag{},
-		longMap:       map[string]*Flag{},
-		output:        os.Stderr,
+		Name:      name,
+		flagsList: []*Flag{},
+		shortMap:  map[string]*Flag{},
+		longMap:   map[string]*Flag{},
+		output:    os.Stderr,
 	}
 	f.Usage = f.PrintDefaults
 
@@ -194,7 +187,7 @@ func (f *Flag) hasDefault() (string, bool) {
 
 func wrapShortParseError(name string, err error) error {
 	if err != nil {
-		return interfaces.ParseErrorf("error parsing flag -%s: %s", name, err)
+		return interfaces.ParseErrorf("parsing flag -%s: %s", name, err)
 	}
 
 	return nil
@@ -220,11 +213,11 @@ func (f *FlagSet) parseShort() error {
 			return interfaces.ParseErrorf("flag provided but not defined: -%s", x)
 		} else if flag.noValues() {
 			if err := flag.Value.Set(""); err != nil {
-				return interfaces.ParseErrorf("error evaluating flag -%s: %s", x, err)
+				return interfaces.ParseErrorf("evaluating flag -%s: %s", x, err)
 			}
 		} else if def, ok := flag.hasDefault(); ok {
 			if err := flag.Value.Set(def); err != nil {
-				return interfaces.ParseErrorf("error evaluating flag -%s: %s", x, err)
+				return interfaces.ParseErrorf("evaluating flag -%s: %s", x, err)
 			}
 		} else {
 			// only the last flag in flags get a value, and this isn't it
@@ -260,7 +253,7 @@ func (f *FlagSet) parseShort() error {
 
 func wrapLongParseError(name string, err error) error {
 	if err != nil {
-		return interfaces.ParseErrorf("error parsing flag --%s: %s", name, err)
+		return interfaces.ParseErrorf("parsing flag --%s: %s", name, err)
 	}
 
 	return nil
@@ -366,12 +359,6 @@ func (f *FlagSet) Parse(args []string) error {
 		more, err := f.parseOne()
 
 		if err != nil {
-			fmt.Fprintf(f.Output(), "Error parsing flag:  %s.", err)
-
-			if f.errorHandling == failure.ExitOnError {
-				failure.Failure()
-			}
-
 			return err
 		}
 

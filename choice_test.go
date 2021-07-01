@@ -1,6 +1,7 @@
 package cli_test
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"testing"
@@ -58,7 +59,10 @@ func TestUsage(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	cmd.Run([]string{"-a", "B", "C"})
+	err := cmd.RunError([]string{"-a", "B", "C"})
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
 
 	if args.A.Choice != "B" {
 		t.Error("A wasn't set correctly")
@@ -68,13 +72,25 @@ func TestSet(t *testing.T) {
 		t.Error("B wasn't set correctly")
 	}
 
+	fmt.Println("next parse...")
+
+	err = cmd.RunError([]string{"-a", "X"})
+	switch err {
+	case nil:
+		t.Error("expected an error")
+	default:
+		if err.Error() != "parsing flag -a: X is not a valid choice, must be in {A,B,C}" {
+			t.Errorf("unexpected error: %s", err)
+		}
+	}
+
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
 	cmd.SetErrorFlag(failure.ContinueOnError)
-
+	fmt.Println("next parse...")
 	cmd.Run([]string{"-a", "X"})
 
-	expected := `Error parsing flag: error parsing flag -a: X is not a valid choice, must be in {A,B,C}.`
+	expected := "Error: parsing flag -a: X is not a valid choice, must be in {A,B,C}.\n"
 	msg := builder.String()
 
 	space := regexp.MustCompile(`\s+`)

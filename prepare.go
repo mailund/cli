@@ -26,13 +26,7 @@ func prepareFlagsAndParams(cmd *Command) error {
 					flagname += "--" + f.Long
 				}
 
-				fmt.Fprintf(cmd.Output(), "error in flag %s: %s", flagname, err)
-
-				if cmd.errf == failure.ExitOnError {
-					failure.Failure()
-				}
-
-				return err
+				return interfaces.ParseErrorf("error in flag %s: %s", flagname, err)
 			}
 		}
 	}

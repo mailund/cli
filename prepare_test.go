@@ -7,6 +7,7 @@ import (
 
 	"github.com/mailund/cli"
 	"github.com/mailund/cli/interfaces"
+	"github.com/mailund/cli/internal/failure"
 )
 
 type prepareSuccess struct{}
@@ -71,10 +72,26 @@ func TestFlagFail(t *testing.T) {
 		t.Fatalf("Unexpected construction error: %s", err)
 	}
 
+	failed := false
+	failure.Failure = func() { failed = true }
+
+	err = cmd.RunError([]string{})
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+
+	if err.Error() != "error in flag -f,--flag: fail" {
+		t.Errorf("(1) unexpected err msg: %s", err)
+	}
+
 	cmd.SetOutput(builder)
 	cmd.Run([]string{})
 
-	if expected, msg := "error in flag -f,--flag: fail", builder.String(); msg != expected {
-		t.Errorf("unexpected msg: %s", msg)
+	if !failed {
+		t.Error("Expected a failure")
+	}
+
+	if expected, msg := "Error: error in flag -f,--flag: fail.\n", builder.String(); msg != expected {
+		t.Errorf("(2) unexpected msg: %s", msg)
 	}
 }

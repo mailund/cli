@@ -12,7 +12,7 @@ import (
 	"github.com/mailund/cli/internal/vals"
 )
 
-func TestBasicInt(t *testing.T) { //nolint:funlen,gocyclo // test functions are just sometimes long
+func TestBasicInt(t *testing.T) { //nolint:funlen // test functions are just sometimes long
 	f := flags.NewFlagSet("test", failure.ExitOnError)
 
 	builder := new(strings.Builder)
@@ -101,17 +101,10 @@ func TestBasicInt(t *testing.T) { //nolint:funlen,gocyclo // test functions are 
 		t.Error("Args are in an unexpected state")
 	}
 
-	f.SetErrFlag(failure.ContinueOnError)
-
 	if err := f.Parse([]string{"-i", "foo"}); err == nil {
 		t.Error("This should have been a failure")
 	}
 
-	var failed = false
-
-	f.SetErrFlag(failure.ExitOnError)
-
-	failure.Failure = func() { failed = true }
 	builder = new(strings.Builder)
 
 	f.SetOutput(builder)
@@ -122,32 +115,10 @@ func TestBasicInt(t *testing.T) { //nolint:funlen,gocyclo // test functions are 
 		t.Errorf("unexpected error message: %s", err)
 	}
 
-	if !failed {
-		t.Error("We expected a failure")
-	}
-
-	expected = "Error parsing flag:  flag -i needs an argument."
-	if errMsg := builder.String(); errMsg != expected {
-		t.Errorf("Unexpected error: %s", errMsg)
-	}
-
-	builder = new(strings.Builder)
-
-	f.SetOutput(builder)
-
 	if err := f.Parse([]string{"--int"}); err == nil {
 		t.Error("We expected a failure here")
 	} else if err.Error() != "flag --int needs an argument" {
 		t.Errorf("unexpected error message: %s", err)
-	}
-
-	if !failed {
-		t.Error("We expected a failure")
-	}
-
-	expected = "Error parsing flag:  flag --int needs an argument."
-	if errMsg := builder.String(); errMsg != expected {
-		t.Errorf("Unexpected error: %s", errMsg)
 	}
 
 	if err := f.Parse([]string{"--int", "13"}); err != nil {
@@ -167,8 +138,6 @@ func TestDoubleInsertion(t *testing.T) {
 	f := flags.NewFlagSet("test", failure.ExitOnError)
 
 	var i vals.IntValue
-
-	f.SetErrFlag(failure.ContinueOnError)
 
 	if err := f.Var(&i, "", "i", "integer"); err != nil {
 		t.Fatal("error inserting an integer")
@@ -398,19 +367,19 @@ func checkProtocol(t *testing.T, f *flags.FlagSet) {
 
 	if err := f.Parse([]string{"--int"}); err == nil {
 		t.Error("This should fail when MyIntDef.Set() raises an error")
-	} else if err.Error() != "error parsing flag --int: myint" {
+	} else if err.Error() != "parsing flag --int: myint" {
 		t.Errorf("unexpected error: '%s'", err)
 	}
 
 	if err := f.Parse([]string{"-ai"}); err == nil {
 		t.Error("This should fail when MyIntDef.Set() raises an error")
-	} else if err.Error() != "error parsing flag -i: myint" {
+	} else if err.Error() != "parsing flag -i: myint" {
 		t.Errorf("unexpected error: '%s'", err)
 	}
 
 	if err := f.Parse([]string{"-ia"}); err == nil {
 		t.Error("This should fail when MyIntDef.Set() raises an error")
-	} else if err.Error() != "error evaluating flag -i: myint" {
+	} else if err.Error() != "evaluating flag -i: myint" {
 		t.Errorf("unexpected error: '%s'", err)
 	}
 }

@@ -180,7 +180,7 @@ func TestCommandCalled(t *testing.T) {
 	}
 }
 
-func TestOption(t *testing.T) {
+func TestOption(t *testing.T) { //nolint:funlen // test functions can be long
 	called := false
 
 	type argv struct {
@@ -196,20 +196,26 @@ func TestOption(t *testing.T) {
 		Long:   "a really good foo",
 		Init:   init,
 		Action: func(_ interface{}) { called = true }})
-	cmd.SetErrorFlag(failure.ContinueOnError)
 
-	// We won't call Failure() here, because the error is handled
-	// by flag.FlagSet(), but we get the error from it.
+	err := cmd.RunError([]string{"-x", "foo"})
+	if err == nil {
+		t.Fatal("expected an error here")
+	}
+
+	if err.Error() != "parsing flag -x: argument \"foo\" cannot be parsed as int" {
+		t.Errorf("unexpected error: %s", err)
+	}
+
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
-
+	cmd.SetErrorFlag(failure.ContinueOnError)
 	cmd.Run([]string{"-x", "foo"}) // wrong type for int
 
 	if called {
 		t.Error("The command shouldn't be called")
 	}
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, `error parsing flag -x: argument "foo" cannot be parsed as int.`) {
+	if errmsg := builder.String(); errmsg == "Error: parsing flag -x: argument \"foo\" cannot be parsed as int." {
 		t.Errorf("Unexpected error msg: %s", errmsg)
 	}
 
@@ -369,14 +375,13 @@ func TestMenuFailure(t *testing.T) {
 
 	builder := new(strings.Builder)
 	menu.SetOutput(builder)
-	menu.SetErrorFlag(failure.ContinueOnError)
 	menu.Run([]string{"z"})
 
 	if !failed {
 		t.Error("Expected command to fail")
 	}
 
-	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "'z' is not a valid command for menu.") {
+	if errmsg := builder.String(); !strings.HasPrefix(errmsg, "Error: 'z' is not a valid command for menu.") {
 		t.Errorf("(1) Expected different error message than %s\n", errmsg)
 	}
 
@@ -384,7 +389,7 @@ func TestMenuFailure(t *testing.T) {
 	menu.SetOutput(builder)
 	menu.Run([]string{"x", "--foo"})
 
-	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "flag provided but not defined: --foo.") {
+	if errmsg := builder.String(); !strings.HasSuffix(errmsg, "flag provided but not defined: --foo.\n") {
 		t.Errorf("(2) Expected different error message than %s\n", errmsg)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/failure"
 	"github.com/mailund/cli/internal/flags"
 	"github.com/mailund/cli/internal/params"
@@ -73,7 +74,6 @@ func (cmd *Command) SetOutput(out io.Writer) {
 // and params, and on all subcommands this command holds.
 func (cmd *Command) SetErrorFlag(f failure.ErrorHandling) {
 	cmd.errf = f
-	cmd.flags.SetErrFlag(f)
 	cmd.params.SetErrFlag(f)
 
 	for _, subcmd := range cmd.Subcommands {
@@ -94,27 +94,23 @@ func (cmd *Command) SetUsage(usage func()) {
 	cmd.CommandSpec.Usage = usage
 }
 
-// Run parses options and arguments from args and then executes the
-// command.
-//
-// Parsing errors for either flags or parameters will terminate the program
-// with os.Exit(0) for -help options and os.Exit(2) otherwise. If the parsing
-// is succesfull, the underlying run callback is executed.
-func (cmd *Command) Run(args []string) {
-	// Outside of testing, we never get the errors, so we don't
-	// propagate them. For testing, it is good to disable the exit
-	// in flags and params. The error handling here is only a way of
-	// mocking termination and serves no other purpose.
+// RunError parses options and arguments from args and then executes the
+// command. This function returns an error if there are errors parsing or preparing
+// the command line arguments, and the command's error handling flag is
+// failure.ContinueOnError. You most likely want to use the Run() method
+// instead, unless you have good reasons to capture errors rather than
+// terminate your program on parsing errors.
+func (cmd *Command) RunError(args []string) error {
 	if err := cmd.flags.Parse(args); err != nil {
-		return
+		return err
 	}
 
 	if err := cmd.params.Parse(cmd.flags.Args()); err != nil {
-		return
+		return err
 	}
 
 	if err := prepareFlagsAndParams(cmd); err != nil {
-		return
+		return err
 	}
 
 	// Invoke the action for this (sub)command
@@ -124,12 +120,28 @@ func (cmd *Command) Run(args []string) {
 
 	// then, if there are sub-commands, dispatch
 	if len(cmd.subcommands) > 0 {
-		if subcmd, ok := cmd.subcommands[cmd.command]; ok {
-			subcmd.Run(cmd.cmdArgs)
-		} else {
-			fmt.Fprintf(cmd.Output(),
-				"'%s' is not a valid command for %s.\n\n", cmd.command, cmd.Name)
-			cmd.Usage()
+		subcmd, ok := cmd.subcommands[cmd.command]
+		if !ok {
+			return interfaces.ParseErrorf("'%s' is not a valid command for %s.\n\n", cmd.command, cmd.Name)
+		}
+
+		return subcmd.RunError(cmd.cmdArgs)
+	}
+
+	return nil
+}
+
+// Run parses options and arguments from args and then executes the
+// command.
+//
+// Parsing errors for either flags or parameters will terminate the program
+// with os.Exit(0) for -help options and os.Exit(2) otherwise. If the parsing
+// is succesfull, the underlying run callback is executed.
+func (cmd *Command) Run(args []string) {
+	if err := cmd.RunError(args); err != nil {
+		fmt.Fprintf(cmd.out, "Error: %s.\n", err)
+
+		if cmd.errf == failure.ExitOnError {
 			failure.Failure()
 		}
 	}
@@ -155,6 +167,7 @@ func showHelp(usage func()) func() error {
 func NewCommandError(spec CommandSpec) (*Command, error) { //nolint:gocritic // specs are large but only copied when we create a command
 	cmd := &Command{
 		CommandSpec: spec,
+		errf:        failure.ExitOnError,
 		flags:       flags.NewFlagSet(spec.Name, failure.ExitOnError),
 		params:      params.NewParamSet(spec.Name, failure.ExitOnError)}
 
