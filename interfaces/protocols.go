@@ -30,7 +30,7 @@ type NoValueFlag interface {
 // the Default() function should return the string that Set() is called with if no value
 // is provided
 type DefaultValueFlag interface {
-	Default() string
+	DefaultValueFlag() string
 }
 
 // ArgumentDescription provides a value a way to add to the description string for a flag or positional.
@@ -48,4 +48,9 @@ type FlagValueDescription interface {
 // of default values. The flag is true if validating a flag and false otherwise.
 type Validator interface {
 	Validate(flag bool) error // Should return nil if everything is fine, or an error otherwise
+}
+
+// Prepare is used after parsing and before running a command.
+type Prepare interface {
+	PrepareValue() error // Called after parsing and before we run a command
 }

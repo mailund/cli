@@ -11,7 +11,7 @@ import (
 //go:generate go run gen/genvals.go genvals
 
 // We explicitly write this method so boolean flags do not need arguments
-func (val *BoolValue) Default() string { return "true" }
+func (val *BoolValue) DefaultValueFlag() string { return "true" }
 
 type ValConstructor func(reflect.Value) interfaces.FlagValue
 

@@ -864,14 +864,14 @@ To handle those flags, we have the `DefaultValueFlag` interface:
 
 ```go
 type DefaultValueFlag interface {
-  Default() string
+  DefaultValueFlag() string
 }
 ```
 
-The `Default() string` method should return the default string to give to `Set(string) error` when the flag is used without an argument. For booleans, `cli` implement it as:
+The `DefaultValueFlag() string` method should return the default string to give to `Set(string) error` when the flag is used without an argument. For booleans, `cli` implement it as:
 
 ```go
-func (val *BoolValue) Default() string { return "true" }
+func (val *BoolValue) DefaultValueFlag() string { return "true" }
 ```
 
 Flags that implement `DefaultValueFlag` can only take arguments as `--flag=arg`, since there is no way of knowing if `--flag foo` should interpret `foo` as a value for `--flag`, or if `--flag` should use its default and we should treat `foo` as a positional argument.
@@ -901,3 +901,11 @@ func (f FuncNoValue) Validate(bool) error {
 ```
 
 We don't need to distinguish between flags and other parameters for callbacks, because the callback will be called regardless, and can never be nil.
+
+Sometimes, we want to do something to a value again after parsing and before running a command. That gives us a hook to modify a value or handle default values that aren't quite ready to go. For that, we have `Prepare`.
+
+```go
+type Prepare interface {
+  PrepareValue() error // Called after parsing and before we run a command
+}
+```

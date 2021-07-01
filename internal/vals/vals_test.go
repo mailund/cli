@@ -17,7 +17,7 @@ func simplifyUsage(x string) string {
 func TestBoolFlag(t *testing.T) {
 	var b vals.BoolValue
 
-	if b.Default() != "true" {
+	if b.DefaultValueFlag() != "true" {
 		t.Fatal("boolean values should work as boolean flags with default value bool")
 	}
 }

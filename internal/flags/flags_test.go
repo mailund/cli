@@ -417,8 +417,8 @@ func checkProtocol(t *testing.T, f *flags.FlagSet) {
 
 type MyIntDef int // a value with a default that raises an error
 
-func (val *MyIntDef) String() string  { return "foo" }
-func (val *MyIntDef) Default() string { return "42" }
+func (val *MyIntDef) String() string           { return "foo" }
+func (val *MyIntDef) DefaultValueFlag() string { return "42" }
 func (val *MyIntDef) Set(x string) error {
 	return interfaces.ParseErrorf("myint")
 }

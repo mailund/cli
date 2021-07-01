@@ -186,7 +186,7 @@ func (f *Flag) noValues() bool {
 
 func (f *Flag) hasDefault() (string, bool) {
 	if def, ok := f.Value.(interfaces.DefaultValueFlag); ok {
-		return def.Default(), ok
+		return def.DefaultValueFlag(), ok
 	}
 
 	return "", false

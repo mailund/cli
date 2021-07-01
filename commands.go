@@ -41,6 +41,7 @@ type CommandSpec struct {
 type Command struct {
 	CommandSpec
 
+	errf   failure.ErrorHandling
 	flags  *flags.FlagSet
 	params *params.ParamSet
 	argv   interface{}
@@ -71,6 +72,7 @@ func (cmd *Command) SetOutput(out io.Writer) {
 // SetErrorFlag recursively sets error handling flags on the command's flags
 // and params, and on all subcommands this command holds.
 func (cmd *Command) SetErrorFlag(f failure.ErrorHandling) {
+	cmd.errf = f
 	cmd.flags.SetErrFlag(f)
 	cmd.params.SetErrFlag(f)
 
@@ -108,6 +110,10 @@ func (cmd *Command) Run(args []string) {
 	}
 
 	if err := cmd.params.Parse(cmd.flags.Args()); err != nil {
+		return
+	}
+
+	if err := prepareFlagsAndParams(cmd); err != nil {
 		return
 	}
 
