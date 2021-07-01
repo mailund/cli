@@ -834,7 +834,7 @@ Arguments:
   mandatory choice (choose from {A,B,C})
 ```
 
-
+The `Choice` type is already implemented in `cli`, so if you want it as described here, you can use `cli.Choice`. Ideally, it should get its options as keys from a map, as that is often how we handle choices, but it is an ugly interface to do this through reflection, and cumbersome to do it using code generation, so I am waiting for generics before I add that feature.
 
 
 For flags, there can be additional constraints. Some flags, for example, should not take arguments. If you don't want them to, then implement the `NoValueFlag` interface:
