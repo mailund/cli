@@ -1,4 +1,4 @@
-// interfaces implements public interfaces for functionality buried
+// Package interfaces implements public interfaces for functionality buried
 // deeper in the internal packages
 package interfaces
 

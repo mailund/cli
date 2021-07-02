@@ -249,8 +249,8 @@ func {{VariadicTypeName .TypeName}}Constructor(val reflect.Value) interfaces.Var
 }
 `
 
-var tableTemplate = "\tValsConstructors[reflect.TypeOf((*{{.TypeName}})(nil))] = {{TypeName .TypeName}}Constructor\n" +
-	"\tVarValsConstructors[reflect.TypeOf((*[]{{.TypeName}})(nil))] = {{VariadicTypeName .TypeName}}Constructor\n"
+var tableTemplate = "\tvalsConstructors[reflect.TypeOf((*{{.TypeName}})(nil))] = {{TypeName .TypeName}}Constructor\n" +
+	"\tvarValsConstructors[reflect.TypeOf((*[]{{.TypeName}})(nil))] = {{VariadicTypeName .TypeName}}Constructor\n"
 
 var testTemplate = `
 func Test{{TypeName .TypeName}}(t *testing.T) {
