@@ -75,6 +75,11 @@ func (o *OutFile) PrepareValue() error {
 	return o.Open(o.Fname)
 }
 
+// FlagValueDescription implements the value protocol
+func (o *OutFile) FlagValueDescription() string {
+	return "output file"
+}
+
 // InFile represents an open file as an argument
 type InFile struct {
 	io.Reader
@@ -139,4 +144,9 @@ func (in *InFile) PrepareValue() error {
 	}
 
 	return in.Open(in.Fname)
+}
+
+// FlagValueDescription implements the value protocol
+func (in *InFile) FlagValueDescription() string {
+	return "input file"
 }
