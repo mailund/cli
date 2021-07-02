@@ -36,7 +36,7 @@ func ExampleCommand_second() {
 func ExampleCommand_third() {
 	type AddArgs struct {
 		X int `pos:"x" descr:"first addition argument"`
-		Y int `pos:"y" descr:"first addition argument"`
+		Y int `pos:"y" descr:"second addition argument"`
 	}
 
 	add := cli.NewCommand(
@@ -135,8 +135,8 @@ func ExampleCommand_fifth() {
 
 func ExampleCommand_sixth() {
 	type CalcArgs struct {
-		X int `pos:"x" descr:"first addition argument"`
-		Y int `pos:"y" descr:"first addition argument"`
+		X int `pos:"x" descr:"first argument"`
+		Y int `pos:"y" descr:"second argument"`
 	}
 
 	add := cli.NewCommand(
@@ -179,8 +179,8 @@ func ExampleCommand_sixth() {
 
 func ExampleCommand_seventh() {
 	type CalcArgs struct {
-		X int `pos:"x" descr:"first addition argument"`
-		Y int `pos:"y" descr:"first addition argument"`
+		X int `pos:"x" descr:"first argument"`
+		Y int `pos:"y" descr:"second argument"`
 	}
 
 	add := cli.NewCommand(
@@ -228,8 +228,8 @@ func ExampleCommand_seventh() {
 
 func ExampleNewMenu() {
 	type CalcArgs struct {
-		X int `pos:"x" descr:"first addition argument"`
-		Y int `pos:"y" descr:"first addition argument"`
+		X int `pos:"x" descr:"first argument"`
+		Y int `pos:"y" descr:"second argument"`
 	}
 
 	add := cli.NewCommand(

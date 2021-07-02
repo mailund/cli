@@ -122,7 +122,7 @@ Let’s say we want a command that adds two numbers. For that, we need to argume
 ```go
 type AddArgs struct {
   X int `pos:"x" descr:"first addition argument"`
-  Y int `pos:"y" descr:"first addition argument"`
+  Y int `pos:"y" descr:"second addition argument"`
 }
 ```
 
@@ -244,8 +244,8 @@ You can nest commands to make subcommands. Say we want a tool that can do both a
 
 ```go
 type CalcArgs struct {
-  X int `pos:"x" descr:"first addition argument"`
-  Y int `pos:"y" descr:"first addition argument"`
+  X int `pos:"x" descr:"first argument"`
+  Y int `pos:"y" descr:"second argument"`
 }
 
 add := cli.NewCommand(
@@ -294,8 +294,8 @@ import (
 )
 
 type CalcArgs struct {
-  X int `pos:"x" descr:"first addition argument"`
-  Y int `pos:"y" descr:"first addition argument"`
+  X int `pos:"x" descr:"first argument"`
+  Y int `pos:"y" descr:"second argument"`
 }
 
 func main() {
@@ -374,9 +374,9 @@ Flags:
 
 Arguments:
   x
-	first addition argument
+	first argument
   y
-	first addition argument
+	second argument
 ```
 
 To invoke the commands, you do what experience has taught you and type the subcommand names after the main command:
@@ -592,7 +592,7 @@ Without any flags, the program will accept any string:
 A valid string: Foo
 ```
 
-but set a validator, and it will complain
+but set a validator, and it will complain if the string doesn't satisfy the validation method:
 
 ```sh
 validate -l Foo
@@ -909,3 +909,151 @@ type Prepare interface {
   PrepareValue() error // Called after parsing and before we run a command
 }
 ```
+
+`cli` has a file type for input and output files (called `InFile` and `OutFile` respectively). The idea is that you can specify a file argument, and `cli` will make sure that you have an open file when your command-action is called. For flags, a file can have a default stream, stdin for `InFile` and stdout/stderr for `OutFile`, or a default file name, and for flags, the default is used if the flag isn't provided.
+
+The file objects are implemented using protocols, and for `OutFile` the `PosValue` and `FlagValue` protocols are implemented like this:
+
+```go
+// OutFile represents an open file as an argument
+type OutFile struct {
+  io.Writer
+  Fname string
+}
+
+func (o *OutFile) Open(fname string) error {
+  f, err := os.Create(fname)
+  if err != nil {
+    return interfaces.ParseErrorf("couldn't open file %s: %s", fname, err)
+  }
+
+  o.Writer = f
+
+  return nil
+}
+
+// Close implements the io.Closer interface by forwarding to the writer
+func (o *OutFile) Close() error {
+  var err error
+
+  if closer, ok := o.Writer.(io.Closer); ok {
+    err = closer.Close()
+  }
+
+  o.Writer = nil
+
+  return err
+}
+
+
+// Set implements the PosValue/FlagValue interface
+func (o *OutFile) Set(fname string) error {
+  return o.Open(fname)
+}
+
+// String implements the FlagValue interface
+func (o *OutFile) String() string {
+  switch o.Writer {
+  case os.Stdout:
+    return "stdout"
+  case os.Stderr:
+    return "stderr"
+  default:
+    return `"` + o.Fname + `"`
+  }
+}
+```
+
+For positional arguments, this is all we need. A positional argument must be provided, so we never rely on the default, and we will always call `Set(string)` to open a file.
+
+For flags, we must have a valid default in case the flag isn't used, and we can use the `Validator` protocol to ensure this:
+
+```go
+func (o *OutFile) Validate(flag bool) error {
+  if !flag || o.Writer != nil || o.Fname != "" {
+    return nil // we have a valid default, or we will get an argument
+  }
+
+  return interfaces.SpecErrorf("outfile does not have a valid default")
+}
+```
+
+If the value is not a flag, or if it has a stream or a filename, then we are fine, otherwise we are missing a valid default and that is an error.
+
+But this isn't quite enough either. We want an open file when the command's action run, but we only guarantee that we have a valid default which is *either* a stream or a file name. We need to open the file if the default is a name, and we need to do that before we run the action. That is where we need the `Prepare` protocol.
+
+```go
+func (o *OutFile) PrepareValue() error {
+  if o.Writer != nil {
+    return nil // we already have a writer
+  }
+
+  return o.Open(o.Fname)
+}
+```
+
+Here we check if we already have an output stream. If we do, then the default was a stream or we opened a file because we got an argument, and then we are fine. Otherwise, we must open the default file that we only have the name of.
+
+Here's a (somewhat primitive) program that copies data from an input file to an output file, with default streams for both:
+
+```go
+package main
+
+import (
+  "io/ioutil"
+  "log"
+  "os"
+
+  "github.com/mailund/cli"
+)
+
+type args struct {
+  In  cli.InFile  `flag:"in" short:"i" descr:"input file"`
+  Out cli.OutFile `flag:"out" short:"o" descr:"output file"`
+}
+
+func initCat() interface{} {
+  return &args{
+    In:  cli.InFile{Reader: os.Stdin},
+    Out: cli.OutFile{Writer: os.Stdout},
+  }
+}
+
+func catAction(i interface{}) {
+  a, _ := i.(*args)
+
+  buf, err := ioutil.ReadAll(a.In)
+  if err != nil {
+    log.Fatalf("error reading file: %s", err)
+  }
+
+  err = a.In.Close()
+  if err != nil {
+    log.Fatalf("error closing file: %s", err)
+  }
+
+  _, err = a.Out.Write(buf)
+  if err != nil {
+    log.Fatalf("error writing file: %s", err)
+  }
+
+  err = a.Out.Close()
+  if err != nil {
+    log.Fatalf("error closing file: %s", err)
+  }
+}
+
+var catCmd = cli.NewCommand(
+  cli.CommandSpec{
+    Name:   "cat",
+    Long:   "Writes the content of one file to another.",
+    Init:   initCat,
+    Action: catAction,
+  })
+
+func main() {
+  catCmd.Run(os.Args[1:])
+}
+```
+
+When `catAction` is called, the files are already open, whether we are using the defaults or have provided files via flags, and any errors that might happen opening the files are handled by `cli`. There is still a lot of error handling, because that is needed when working with files in `go`, but you know you have a valid file when the action starts.

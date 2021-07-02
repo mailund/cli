@@ -13,7 +13,7 @@ type OutFile struct {
 	Fname string
 }
 
-func (o *OutFile) open(fname string) error {
+func (o *OutFile) Open(fname string) error {
 	f, err := os.Create(fname)
 	if err != nil {
 		return interfaces.ParseErrorf("couldn't open file %s: %s", fname, err)
@@ -26,7 +26,7 @@ func (o *OutFile) open(fname string) error {
 
 // Set implements the PosValue/FlagValue interface
 func (o *OutFile) Set(fname string) error {
-	return o.open(fname)
+	return o.Open(fname)
 }
 
 // String implements the FlagValue interface
@@ -71,7 +71,7 @@ func (o *OutFile) PrepareValue() error {
 		return nil // we already have a writer
 	}
 
-	return o.open(o.Fname)
+	return o.Open(o.Fname)
 }
 
 // InFile represents an open file as an argument
@@ -80,7 +80,7 @@ type InFile struct {
 	Fname string
 }
 
-func (in *InFile) open(fname string) error {
+func (in *InFile) Open(fname string) error {
 	f, err := os.Open(fname)
 	if err != nil {
 		return interfaces.ParseErrorf("couldn't open file %s: %s", fname, err)
@@ -93,7 +93,7 @@ func (in *InFile) open(fname string) error {
 
 // Set implements the PosValue/FlagValue interface
 func (in *InFile) Set(fname string) error {
-	return in.open(fname)
+	return in.Open(fname)
 }
 
 // String implements the FlagValue interface
@@ -136,5 +136,5 @@ func (in *InFile) PrepareValue() error {
 		return nil // we already have a reader
 	}
 
-	return in.open(in.Fname)
+	return in.Open(in.Fname)
 }
