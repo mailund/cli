@@ -9,9 +9,13 @@ import (
 )
 
 func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	if val := vals.AsFlagValue(vfield.Addr()); val != nil {
-		short := tfield.Tag.Get("short")
+	val := vals.AsFlagValue(vfield.Addr())
+	if val == nil {
+		val = vals.AsCallback(vfield, argv)
+	}
 
+	if val != nil { // We have a value
+		short := tfield.Tag.Get("short")
 		if short == "" && len(name) == 1 {
 			short = name
 		}
@@ -19,17 +23,8 @@ func setFlag(cmd *Command, argv interface{}, name string, tfield *reflect.Struct
 		return cmd.flags.Var(val, name, short, tfield.Tag.Get("descr"))
 	}
 
+	// report appropriate error...
 	if tfield.Type.Kind() == reflect.Func {
-		if val := vals.AsCallback(vfield, argv); val != nil {
-			short := tfield.Tag.Get("short")
-
-			if short == "" && len(name) == 1 {
-				short = name
-			}
-
-			return cmd.flags.Var(val, name, short, tfield.Tag.Get("descr"))
-		}
-
 		return interfaces.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
 	}
 
@@ -62,25 +57,29 @@ func setVariadic(cmd *Command, name string, val interfaces.VariadicValue, tfield
 }
 
 func setParam(cmd *Command, argv interface{}, name string, tfield *reflect.StructField, vfield *reflect.Value) error {
-	if val := vals.AsPosValue(vfield.Addr()); val != nil {
+	// first, try normal value or callback
+	val := vals.AsPosValue(vfield.Addr())
+	if val == nil {
+		val = vals.AsCallback(vfield, argv)
+	}
+
+	if val != nil {
+		// we have a value...
 		cmd.params.Var(val, name, tfield.Tag.Get("descr"))
 		return nil
 	}
 
+	// then try variadics...
 	if val := vals.AsVariadicValue(vfield.Addr()); val != nil {
 		return setVariadic(cmd, name, val, tfield)
 	}
 
+	if val := vals.AsVariadicCallback(vfield, argv); val != nil {
+		return setVariadic(cmd, name, val, tfield)
+	}
+
+	// nothing worked, so we report an appropriate error
 	if tfield.Type.Kind() == reflect.Func {
-		if val := vals.AsCallback(vfield, argv); val != nil {
-			cmd.params.Var(val, name, tfield.Tag.Get("descr"))
-			return nil
-		}
-
-		if val := vals.AsVariadicCallback(vfield, argv); val != nil {
-			return setVariadic(cmd, name, val, tfield)
-		}
-
 		return interfaces.SpecErrorf("incorrect signature for callbacks: %q", tfield.Type)
 	}
 
