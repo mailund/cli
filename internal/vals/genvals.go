@@ -19,6 +19,10 @@ func (val *StringValue) String() string {
 	return string(*val)
 }
 
+func (val *StringValue) FlagValueDescription() string {
+	return "string"
+}
+
 func StringValueConstructor(val reflect.Value) interfaces.FlagValue {
 	return (*StringValue)(val.Interface().(*string))
 }
@@ -34,6 +38,11 @@ func (vals *VariadicStringValue) Set(xs []string) error {
 
 	return nil
 }
+
+func (val *VariadicStringValue) FlagValueDescription() string {
+	return "string(s)"
+}
+
 
 func VariadicStringValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicStringValue)(val.Interface().(*[]string))
@@ -54,6 +63,10 @@ func (val *BoolValue) Set(x string) error {
 
 func (val *BoolValue) String() string {
 	return strconv.FormatBool(bool(*val))
+}
+
+func (val *BoolValue) FlagValueDescription() string {
+	return "boolean"
 }
 
 func BoolValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -77,6 +90,11 @@ func (vals *VariadicBoolValue) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicBoolValue) FlagValueDescription() string {
+	return "boolean(s)"
+}
+
+
 func VariadicBoolValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicBoolValue)(val.Interface().(*[]bool))
 }
@@ -96,6 +114,10 @@ func (val *IntValue) Set(x string) error {
 
 func (val *IntValue) String() string {
 	return strconv.Itoa(int(*val))
+}
+
+func (val *IntValue) FlagValueDescription() string {
+	return "integer"
 }
 
 func IntValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -119,6 +141,11 @@ func (vals *VariadicIntValue) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicIntValue) FlagValueDescription() string {
+	return "integer(s)"
+}
+
+
 func VariadicIntValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicIntValue)(val.Interface().(*[]int))
 }
@@ -138,6 +165,10 @@ func (val *Int8Value) Set(x string) error {
 
 func (val *Int8Value) String() string {
 	return strconv.Itoa(int(*val))
+}
+
+func (val *Int8Value) FlagValueDescription() string {
+	return "integer"
 }
 
 func Int8ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -161,6 +192,11 @@ func (vals *VariadicInt8Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicInt8Value) FlagValueDescription() string {
+	return "integer(s)"
+}
+
+
 func VariadicInt8ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicInt8Value)(val.Interface().(*[]int8))
 }
@@ -180,6 +216,10 @@ func (val *Int16Value) Set(x string) error {
 
 func (val *Int16Value) String() string {
 	return strconv.Itoa(int(*val))
+}
+
+func (val *Int16Value) FlagValueDescription() string {
+	return "integer"
 }
 
 func Int16ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -203,6 +243,11 @@ func (vals *VariadicInt16Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicInt16Value) FlagValueDescription() string {
+	return "integer(s)"
+}
+
+
 func VariadicInt16ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicInt16Value)(val.Interface().(*[]int16))
 }
@@ -222,6 +267,10 @@ func (val *Int32Value) Set(x string) error {
 
 func (val *Int32Value) String() string {
 	return strconv.Itoa(int(*val))
+}
+
+func (val *Int32Value) FlagValueDescription() string {
+	return "integer"
 }
 
 func Int32ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -245,6 +294,11 @@ func (vals *VariadicInt32Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicInt32Value) FlagValueDescription() string {
+	return "integer(s)"
+}
+
+
 func VariadicInt32ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicInt32Value)(val.Interface().(*[]int32))
 }
@@ -264,6 +318,10 @@ func (val *Int64Value) Set(x string) error {
 
 func (val *Int64Value) String() string {
 	return strconv.Itoa(int(*val))
+}
+
+func (val *Int64Value) FlagValueDescription() string {
+	return "integer"
 }
 
 func Int64ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -287,6 +345,11 @@ func (vals *VariadicInt64Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicInt64Value) FlagValueDescription() string {
+	return "integer(s)"
+}
+
+
 func VariadicInt64ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicInt64Value)(val.Interface().(*[]int64))
 }
@@ -306,6 +369,10 @@ func (val *UintValue) Set(x string) error {
 
 func (val *UintValue) String() string {
 	return strconv.FormatUint(uint64(*val), 10)
+}
+
+func (val *UintValue) FlagValueDescription() string {
+	return "unsigned integer"
 }
 
 func UintValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -329,6 +396,11 @@ func (vals *VariadicUintValue) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicUintValue) FlagValueDescription() string {
+	return "unsigned integer(s)"
+}
+
+
 func VariadicUintValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicUintValue)(val.Interface().(*[]uint))
 }
@@ -348,6 +420,10 @@ func (val *Uint8Value) Set(x string) error {
 
 func (val *Uint8Value) String() string {
 	return strconv.FormatUint(uint64(*val), 10)
+}
+
+func (val *Uint8Value) FlagValueDescription() string {
+	return "unsigned integer"
 }
 
 func Uint8ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -371,6 +447,11 @@ func (vals *VariadicUint8Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicUint8Value) FlagValueDescription() string {
+	return "unsigned integer(s)"
+}
+
+
 func VariadicUint8ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicUint8Value)(val.Interface().(*[]uint8))
 }
@@ -390,6 +471,10 @@ func (val *Uint16Value) Set(x string) error {
 
 func (val *Uint16Value) String() string {
 	return strconv.FormatUint(uint64(*val), 10)
+}
+
+func (val *Uint16Value) FlagValueDescription() string {
+	return "unsigned integer"
 }
 
 func Uint16ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -413,6 +498,11 @@ func (vals *VariadicUint16Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicUint16Value) FlagValueDescription() string {
+	return "unsigned integer(s)"
+}
+
+
 func VariadicUint16ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicUint16Value)(val.Interface().(*[]uint16))
 }
@@ -432,6 +522,10 @@ func (val *Uint32Value) Set(x string) error {
 
 func (val *Uint32Value) String() string {
 	return strconv.FormatUint(uint64(*val), 10)
+}
+
+func (val *Uint32Value) FlagValueDescription() string {
+	return "unsigned integer"
 }
 
 func Uint32ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -455,6 +549,11 @@ func (vals *VariadicUint32Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicUint32Value) FlagValueDescription() string {
+	return "unsigned integer(s)"
+}
+
+
 func VariadicUint32ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicUint32Value)(val.Interface().(*[]uint32))
 }
@@ -474,6 +573,10 @@ func (val *Uint64Value) Set(x string) error {
 
 func (val *Uint64Value) String() string {
 	return strconv.FormatUint(uint64(*val), 10)
+}
+
+func (val *Uint64Value) FlagValueDescription() string {
+	return "unsigned integer"
 }
 
 func Uint64ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -497,6 +600,11 @@ func (vals *VariadicUint64Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicUint64Value) FlagValueDescription() string {
+	return "unsigned integer(s)"
+}
+
+
 func VariadicUint64ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicUint64Value)(val.Interface().(*[]uint64))
 }
@@ -516,6 +624,10 @@ func (val *Float32Value) Set(x string) error {
 
 func (val *Float32Value) String() string {
 	return strconv.FormatFloat(float64(*val), 'g', -1, 32)
+}
+
+func (val *Float32Value) FlagValueDescription() string {
+	return "floating point number"
 }
 
 func Float32ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -539,6 +651,11 @@ func (vals *VariadicFloat32Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicFloat32Value) FlagValueDescription() string {
+	return "floating point number(s)"
+}
+
+
 func VariadicFloat32ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicFloat32Value)(val.Interface().(*[]float32))
 }
@@ -558,6 +675,10 @@ func (val *Float64Value) Set(x string) error {
 
 func (val *Float64Value) String() string {
 	return strconv.FormatFloat(float64(*val), 'g', -1, 64)
+}
+
+func (val *Float64Value) FlagValueDescription() string {
+	return "floating point number"
 }
 
 func Float64ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -581,6 +702,11 @@ func (vals *VariadicFloat64Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicFloat64Value) FlagValueDescription() string {
+	return "floating point number(s)"
+}
+
+
 func VariadicFloat64ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicFloat64Value)(val.Interface().(*[]float64))
 }
@@ -600,6 +726,10 @@ func (val *Complex64Value) Set(x string) error {
 
 func (val *Complex64Value) String() string {
 	return strconv.FormatComplex(complex128(*val), 'g', -1, 64)
+}
+
+func (val *Complex64Value) FlagValueDescription() string {
+	return "complex number"
 }
 
 func Complex64ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -623,6 +753,11 @@ func (vals *VariadicComplex64Value) Set(xs []string) error {
 	return nil
 }
 
+func (val *VariadicComplex64Value) FlagValueDescription() string {
+	return "complex number(s)"
+}
+
+
 func VariadicComplex64ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicComplex64Value)(val.Interface().(*[]complex64))
 }
@@ -642,6 +777,10 @@ func (val *Complex128Value) Set(x string) error {
 
 func (val *Complex128Value) String() string {
 	return strconv.FormatComplex(complex128(*val), 'g', -1, 128)
+}
+
+func (val *Complex128Value) FlagValueDescription() string {
+	return "complex number"
 }
 
 func Complex128ValueConstructor(val reflect.Value) interfaces.FlagValue {
@@ -664,6 +803,11 @@ func (vals *VariadicComplex128Value) Set(xs []string) error {
 
 	return nil
 }
+
+func (val *VariadicComplex128Value) FlagValueDescription() string {
+	return "complex number(s)"
+}
+
 
 func VariadicComplex128ValueConstructor(val reflect.Value) interfaces.VariadicValue {
 	return (*VariadicComplex128Value)(val.Interface().(*[]complex128))

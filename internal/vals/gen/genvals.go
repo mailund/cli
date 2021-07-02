@@ -8,9 +8,10 @@ import (
 )
 
 type typeSpec struct {
-	TypeName string
-	Parse    string
-	Format   string
+	TypeName             string
+	Parse                string
+	Format               string
+	FlagValueDescription string
 
 	SetInput     string
 	SetOutput    string
@@ -24,183 +25,199 @@ type typeSpec struct {
 
 var valTypes = []typeSpec{
 	{
-		TypeName:  "string",
-		Parse:     "x",
-		Format:    "string(*val)",
-		SetInput:  "foo",
-		SetOutput: "foo",
-		CantFail:  true,
-		VarInput:  `"foo", "bar", "baz"`,
-		VarOutput: `"foo", "bar", "baz"`,
+		TypeName:             "string",
+		Parse:                "x",
+		Format:               "string(*val)",
+		FlagValueDescription: "string",
+		SetInput:             "foo",
+		SetOutput:            "foo",
+		CantFail:             true,
+		VarInput:             `"foo", "bar", "baz"`,
+		VarOutput:            `"foo", "bar", "baz"`,
 	},
 	{
-		TypeName:     "bool",
-		Parse:        "strconv.ParseBool(x)",
-		Format:       "strconv.FormatBool(bool(*val))",
-		SetInput:     "true",
-		SetOutput:    "true",
-		SetFailInput: "foo",
-		VarInput:     `"true", "false", "true"`,
-		VarOutput:    `true, false, true`,
-		VarFailInput: `"foo"`,
-	},
-
-	{
-		TypeName:     "int",
-		Parse:        "strconv.ParseInt(x, 0, strconv.IntSize)",
-		Format:       "strconv.Itoa(int(*val))",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "foo",
-		VarInput:     `"-1", "2", "-3"`,
-		VarOutput:    `-1, 2, -3`,
-		VarFailInput: `"foo"`,
-	},
-	{
-		TypeName:     "int8",
-		Parse:        "strconv.ParseInt(x, 0, 8)",
-		Format:       "strconv.Itoa(int(*val))",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "foo",
-		VarInput:     `"-1", "2", "-3"`,
-		VarOutput:    `-1, 2, -3`,
-		VarFailInput: `"foo"`,
-	},
-	{
-		TypeName:     "int16",
-		Parse:        "strconv.ParseInt(x, 0, 16)",
-		Format:       "strconv.Itoa(int(*val))",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "foo",
-		VarInput:     `"-1", "2", "-3"`,
-		VarOutput:    `-1, 2, -3`,
-		VarFailInput: `"foo"`,
-	},
-	{
-		TypeName:     "int32",
-		Parse:        "strconv.ParseInt(x, 0, 32)",
-		Format:       "strconv.Itoa(int(*val))",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "foo",
-		VarInput:     `"-1", "2", "-3"`,
-		VarOutput:    `-1, 2, -3`,
-		VarFailInput: `"foo"`,
-	},
-	{
-		TypeName:     "int64",
-		Parse:        "strconv.ParseInt(x, 0, 64)",
-		Format:       "strconv.Itoa(int(*val))",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "foo",
-		VarInput:     `"-1", "2", "-3"`,
-		VarOutput:    `-1, 2, -3`,
-		VarFailInput: `"foo"`,
+		TypeName:             "bool",
+		Parse:                "strconv.ParseBool(x)",
+		Format:               "strconv.FormatBool(bool(*val))",
+		FlagValueDescription: "boolean",
+		SetInput:             "true",
+		SetOutput:            "true",
+		SetFailInput:         "foo",
+		VarInput:             `"true", "false", "true"`,
+		VarOutput:            `true, false, true`,
+		VarFailInput:         `"foo"`,
 	},
 
 	{
-		TypeName:     "uint",
-		Parse:        "strconv.ParseUint(x, 0, strconv.IntSize)",
-		Format:       "strconv.FormatUint(uint64(*val), 10)",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "-1",
-		VarInput:     `"1", "2", "3"`,
-		VarOutput:    `1, 2, 3`,
-		VarFailInput: `"-1"`,
+		TypeName:             "int",
+		Parse:                "strconv.ParseInt(x, 0, strconv.IntSize)",
+		Format:               "strconv.Itoa(int(*val))",
+		FlagValueDescription: "integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "foo",
+		VarInput:             `"-1", "2", "-3"`,
+		VarOutput:            `-1, 2, -3`,
+		VarFailInput:         `"foo"`,
 	},
 	{
-		TypeName:     "uint8",
-		Parse:        "strconv.ParseUint(x, 0, 8)",
-		Format:       "strconv.FormatUint(uint64(*val), 10)",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "-1",
-		VarInput:     `"1", "2", "3"`,
-		VarOutput:    `1, 2, 3`,
-		VarFailInput: `"-1"`,
+		TypeName:             "int8",
+		Parse:                "strconv.ParseInt(x, 0, 8)",
+		Format:               "strconv.Itoa(int(*val))",
+		FlagValueDescription: "integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "foo",
+		VarInput:             `"-1", "2", "-3"`,
+		VarOutput:            `-1, 2, -3`,
+		VarFailInput:         `"foo"`,
 	},
 	{
-		TypeName:     "uint16",
-		Parse:        "strconv.ParseUint(x, 0, 16)",
-		Format:       "strconv.FormatUint(uint64(*val), 10)",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "-1",
-		VarInput:     `"1", "2", "3"`,
-		VarOutput:    `1, 2, 3`,
-		VarFailInput: `"-1"`,
+		TypeName:             "int16",
+		Parse:                "strconv.ParseInt(x, 0, 16)",
+		Format:               "strconv.Itoa(int(*val))",
+		FlagValueDescription: "integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "foo",
+		VarInput:             `"-1", "2", "-3"`,
+		VarOutput:            `-1, 2, -3`,
+		VarFailInput:         `"foo"`,
 	},
 	{
-		TypeName:     "uint32",
-		Parse:        "strconv.ParseUint(x, 0, 32)",
-		Format:       "strconv.FormatUint(uint64(*val), 10)",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "-1",
-		VarInput:     `"1", "2", "3"`,
-		VarOutput:    `1, 2, 3`,
-		VarFailInput: `"-1"`,
+		TypeName:             "int32",
+		Parse:                "strconv.ParseInt(x, 0, 32)",
+		Format:               "strconv.Itoa(int(*val))",
+		FlagValueDescription: "integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "foo",
+		VarInput:             `"-1", "2", "-3"`,
+		VarOutput:            `-1, 2, -3`,
+		VarFailInput:         `"foo"`,
 	},
 	{
-		TypeName:     "uint64",
-		Parse:        "strconv.ParseUint(x, 0, 64)",
-		Format:       "strconv.FormatUint(uint64(*val), 10)",
-		SetInput:     "42",
-		SetOutput:    "42",
-		SetFailInput: "-1",
-		VarInput:     `"1", "2", "3"`,
-		VarOutput:    `1, 2, 3`,
-		VarFailInput: `"-1"`,
-	},
-
-	{
-		TypeName:     "float32",
-		Parse:        "strconv.ParseFloat(x, 32)",
-		Format:       "strconv.FormatFloat(float64(*val), 'g', -1, 32)",
-		SetInput:     "3.14",
-		SetOutput:    "3.14",
-		SetFailInput: "foo",
-		VarInput:     `"0.1", "0.2", "0.3"`,
-		VarOutput:    `0.1, 0.2, 0.3`,
-		VarFailInput: `"foo"`,
-	},
-	{
-		TypeName:     "float64",
-		Parse:        "strconv.ParseFloat(x, 64)",
-		Format:       "strconv.FormatFloat(float64(*val), 'g', -1, 64)",
-		SetInput:     "3.14",
-		SetOutput:    "3.14",
-		SetFailInput: "foo",
-		VarInput:     `"0.1", "0.2", "0.3"`,
-		VarOutput:    `0.1, 0.2, 0.3`,
-		VarFailInput: `"foo"`,
+		TypeName:             "int64",
+		Parse:                "strconv.ParseInt(x, 0, 64)",
+		Format:               "strconv.Itoa(int(*val))",
+		FlagValueDescription: "integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "foo",
+		VarInput:             `"-1", "2", "-3"`,
+		VarOutput:            `-1, 2, -3`,
+		VarFailInput:         `"foo"`,
 	},
 
 	{
-		TypeName:     "complex64",
-		Parse:        "strconv.ParseComplex(x, 64)",
-		Format:       "strconv.FormatComplex(complex128(*val), 'g', -1, 64)",
-		SetInput:     "(3.14+42i)",
-		SetOutput:    "(3.14+42i)",
-		SetFailInput: "foo",
-		VarInput:     `"0.1+0.2i", "0.2+0.3i", "0.3+0.4i"`,
-		VarOutput:    `0.1+0.2i, 0.2+0.3i, 0.3+0.4i`,
-		VarFailInput: `"foo"`,
+		TypeName:             "uint",
+		Parse:                "strconv.ParseUint(x, 0, strconv.IntSize)",
+		Format:               "strconv.FormatUint(uint64(*val), 10)",
+		FlagValueDescription: "unsigned integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "-1",
+		VarInput:             `"1", "2", "3"`,
+		VarOutput:            `1, 2, 3`,
+		VarFailInput:         `"-1"`,
 	},
 	{
-		TypeName:     "complex128",
-		Parse:        "strconv.ParseComplex(x, 128)",
-		Format:       "strconv.FormatComplex(complex128(*val), 'g', -1, 128)",
-		SetInput:     "(3.14+42i)",
-		SetOutput:    "(3.14+42i)",
-		SetFailInput: "foo",
-		VarInput:     `"0.1+0.2i", "0.2+0.3i", "0.3+0.4i"`,
-		VarOutput:    `0.1+0.2i, 0.2+0.3i, 0.3+0.4i`,
-		VarFailInput: `"foo"`,
+		TypeName:             "uint8",
+		Parse:                "strconv.ParseUint(x, 0, 8)",
+		Format:               "strconv.FormatUint(uint64(*val), 10)",
+		FlagValueDescription: "unsigned integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "-1",
+		VarInput:             `"1", "2", "3"`,
+		VarOutput:            `1, 2, 3`,
+		VarFailInput:         `"-1"`,
+	},
+	{
+		TypeName:             "uint16",
+		Parse:                "strconv.ParseUint(x, 0, 16)",
+		Format:               "strconv.FormatUint(uint64(*val), 10)",
+		FlagValueDescription: "unsigned integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "-1",
+		VarInput:             `"1", "2", "3"`,
+		VarOutput:            `1, 2, 3`,
+		VarFailInput:         `"-1"`,
+	},
+	{
+		TypeName:             "uint32",
+		Parse:                "strconv.ParseUint(x, 0, 32)",
+		Format:               "strconv.FormatUint(uint64(*val), 10)",
+		FlagValueDescription: "unsigned integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "-1",
+		VarInput:             `"1", "2", "3"`,
+		VarOutput:            `1, 2, 3`,
+		VarFailInput:         `"-1"`,
+	},
+	{
+		TypeName:             "uint64",
+		Parse:                "strconv.ParseUint(x, 0, 64)",
+		Format:               "strconv.FormatUint(uint64(*val), 10)",
+		FlagValueDescription: "unsigned integer",
+		SetInput:             "42",
+		SetOutput:            "42",
+		SetFailInput:         "-1",
+		VarInput:             `"1", "2", "3"`,
+		VarOutput:            `1, 2, 3`,
+		VarFailInput:         `"-1"`,
+	},
+
+	{
+		TypeName:             "float32",
+		Parse:                "strconv.ParseFloat(x, 32)",
+		Format:               "strconv.FormatFloat(float64(*val), 'g', -1, 32)",
+		FlagValueDescription: "floating point number",
+		SetInput:             "3.14",
+		SetOutput:            "3.14",
+		SetFailInput:         "foo",
+		VarInput:             `"0.1", "0.2", "0.3"`,
+		VarOutput:            `0.1, 0.2, 0.3`,
+		VarFailInput:         `"foo"`,
+	},
+	{
+		TypeName:             "float64",
+		Parse:                "strconv.ParseFloat(x, 64)",
+		Format:               "strconv.FormatFloat(float64(*val), 'g', -1, 64)",
+		FlagValueDescription: "floating point number",
+		SetInput:             "3.14",
+		SetOutput:            "3.14",
+		SetFailInput:         "foo",
+		VarInput:             `"0.1", "0.2", "0.3"`,
+		VarOutput:            `0.1, 0.2, 0.3`,
+		VarFailInput:         `"foo"`,
+	},
+
+	{
+		TypeName:             "complex64",
+		Parse:                "strconv.ParseComplex(x, 64)",
+		Format:               "strconv.FormatComplex(complex128(*val), 'g', -1, 64)",
+		FlagValueDescription: "complex number",
+		SetInput:             "(3.14+42i)",
+		SetOutput:            "(3.14+42i)",
+		SetFailInput:         "foo",
+		VarInput:             `"0.1+0.2i", "0.2+0.3i", "0.3+0.4i"`,
+		VarOutput:            `0.1+0.2i, 0.2+0.3i, 0.3+0.4i`,
+		VarFailInput:         `"foo"`,
+	},
+	{
+		TypeName:             "complex128",
+		Parse:                "strconv.ParseComplex(x, 128)",
+		Format:               "strconv.FormatComplex(complex128(*val), 'g', -1, 128)",
+		FlagValueDescription: "complex number",
+		SetInput:             "(3.14+42i)",
+		SetOutput:            "(3.14+42i)",
+		SetFailInput:         "foo",
+		VarInput:             `"0.1+0.2i", "0.2+0.3i", "0.3+0.4i"`,
+		VarOutput:            `0.1+0.2i, 0.2+0.3i, 0.3+0.4i`,
+		VarFailInput:         `"foo"`,
 	},
 }
 
@@ -221,6 +238,10 @@ func (val *{{TypeName .TypeName}}) Set(x string) error {
 
 func (val *{{TypeName .TypeName}}) String() string {
 	return {{.Format}}
+}
+
+func (val *{{TypeName .TypeName}}) FlagValueDescription() string {
+	return "{{.FlagValueDescription}}"
 }
 
 func {{TypeName .TypeName}}Constructor(val reflect.Value) interfaces.FlagValue {
@@ -244,6 +265,11 @@ func (vals *{{VariadicTypeName .TypeName}}) Set(xs []string) error {
 	return nil
 }
 
+func (val *{{VariadicTypeName .TypeName}}) FlagValueDescription() string {
+	return "{{.FlagValueDescription}}(s)"
+}
+
+
 func {{VariadicTypeName .TypeName}}Constructor(val reflect.Value) interfaces.VariadicValue {
 	return (*{{VariadicTypeName .TypeName}})(val.Interface().(*[]{{.TypeName}}))
 }
@@ -258,6 +284,12 @@ func Test{{TypeName .TypeName}}(t *testing.T) {
 		x     {{.TypeName}}
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "{{.FlagValueDescription}}" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -285,6 +317,13 @@ func Test{{VariadicTypeName .TypeName}}(t *testing.T) {
 	if vv == nil {
 		t.Fatal("vv should not be nil")
 	}
+
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "{{.FlagValueDescription}}(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
 
 	if err := vv.Set([]string{ {{.VarInput}} }); err != nil {
 		t.Error("vv.Set should not fail")
@@ -357,6 +396,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/vals"
 )`)
 

@@ -57,7 +57,7 @@ long
 Flags:
   -h,--help
 	show help for name
-  --foo value
+  --foo string
 	set foo
 	
 Arguments:
@@ -91,7 +91,7 @@ short
 Flags:
   -h,--help
 	show help for name
-  --foo value
+  --foo string
 	set foo
 	
 Arguments:
@@ -148,9 +148,9 @@ func TestNewCommandUsage2(t *testing.T) {
 	Flags:
 	  -h,--help
 		show help for name
-	  -f,--foo value
+	  -f,--foo string
 		foo
-	  --bar [value] (no value = true)
+	  --bar [boolean] (no value = true)
 		bar (default false)
 	  --baz
 		baz

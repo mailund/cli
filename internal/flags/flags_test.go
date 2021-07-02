@@ -47,7 +47,7 @@ func TestBasicInt(t *testing.T) { //nolint:funlen // test functions are just som
 	builder = new(strings.Builder)
 	f.PrintDefaults(builder)
 
-	expected = "Flags:\n  -i,--int value\n\tinteger (default 0)\n"
+	expected = "Flags:\n  -i,--int integer\n\tinteger (default 0)\n"
 	if usageMsg := builder.String(); usageMsg != expected {
 		t.Errorf("Unexpected usage: %s", usageMsg)
 	}
@@ -430,7 +430,7 @@ func TestUsage(t *testing.T) {
 	builder := new(strings.Builder)
 	f.PrintDefaults(builder)
 
-	expected := `Flags: -a,--aa value an a (default 0) -b,--bb [value] (no value = true) a b (default false) -c,--cc a c
+	expected := `Flags: -a,--aa integer an a (default 0) -b,--bb [boolean] (no value = true) a b (default false) -c,--cc a c
 	`
 	msg := builder.String()
 

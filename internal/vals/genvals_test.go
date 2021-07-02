@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/cli/internal/vals"
 )
 
@@ -13,6 +14,12 @@ func TestStringValue(t *testing.T) {
 		x     string
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "string" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -37,6 +44,13 @@ func TestVariadicStringValue(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "string(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "foo", "bar", "baz" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -51,6 +65,12 @@ func TestBoolValue(t *testing.T) {
 		x     bool
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "boolean" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -79,6 +99,13 @@ func TestVariadicBoolValue(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "boolean(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "true", "false", "true" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -97,6 +124,12 @@ func TestIntValue(t *testing.T) {
 		x     int
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -125,6 +158,13 @@ func TestVariadicIntValue(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -143,6 +183,12 @@ func TestInt8Value(t *testing.T) {
 		x     int8
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -171,6 +217,13 @@ func TestVariadicInt8Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -189,6 +242,12 @@ func TestInt16Value(t *testing.T) {
 		x     int16
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -217,6 +276,13 @@ func TestVariadicInt16Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -235,6 +301,12 @@ func TestInt32Value(t *testing.T) {
 		x     int32
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -263,6 +335,13 @@ func TestVariadicInt32Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -281,6 +360,12 @@ func TestInt64Value(t *testing.T) {
 		x     int64
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -309,6 +394,13 @@ func TestVariadicInt64Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "-1", "2", "-3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -327,6 +419,12 @@ func TestUintValue(t *testing.T) {
 		x     uint
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -355,6 +453,13 @@ func TestVariadicUintValue(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -373,6 +478,12 @@ func TestUint8Value(t *testing.T) {
 		x     uint8
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -401,6 +512,13 @@ func TestVariadicUint8Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -419,6 +537,12 @@ func TestUint16Value(t *testing.T) {
 		x     uint16
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -447,6 +571,13 @@ func TestVariadicUint16Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -465,6 +596,12 @@ func TestUint32Value(t *testing.T) {
 		x     uint32
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -493,6 +630,13 @@ func TestVariadicUint32Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -511,6 +655,12 @@ func TestUint64Value(t *testing.T) {
 		x     uint64
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -539,6 +689,13 @@ func TestVariadicUint64Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "unsigned integer(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "1", "2", "3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -557,6 +714,12 @@ func TestFloat32Value(t *testing.T) {
 		x     float32
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "floating point number" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -585,6 +748,13 @@ func TestVariadicFloat32Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "floating point number(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "0.1", "0.2", "0.3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -603,6 +773,12 @@ func TestFloat64Value(t *testing.T) {
 		x     float64
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "floating point number" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -631,6 +807,13 @@ func TestVariadicFloat64Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "floating point number(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "0.1", "0.2", "0.3" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -649,6 +832,12 @@ func TestComplex64Value(t *testing.T) {
 		x     complex64
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "complex number" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -677,6 +866,13 @@ func TestVariadicComplex64Value(t *testing.T) {
 		t.Fatal("vv should not be nil")
 	}
 
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "complex number(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
+
 	if err := vv.Set([]string{ "0.1+0.2i", "0.2+0.3i", "0.3+0.4i" }); err != nil {
 		t.Error("vv.Set should not fail")
 	}
@@ -695,6 +891,12 @@ func TestComplex128Value(t *testing.T) {
 		x     complex128
 		val = vals.AsFlagValue(reflect.ValueOf(&x))
 	)
+
+	if v, ok := val.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "complex number" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
 
 	if val == nil {
 		t.Fatal("val should not be nil")
@@ -722,6 +924,13 @@ func TestVariadicComplex128Value(t *testing.T) {
 	if vv == nil {
 		t.Fatal("vv should not be nil")
 	}
+
+	if v, ok := vv.(interfaces.FlagValueDescription); !ok {
+		t.Error("We should have a value description")
+	} else if v.FlagValueDescription() != "complex number(s)" {
+		t.Errorf("Unexpected value description: %s", v.FlagValueDescription())
+	}
+
 
 	if err := vv.Set([]string{ "0.1+0.2i", "0.2+0.3i", "0.3+0.4i" }); err != nil {
 		t.Error("vv.Set should not fail")
