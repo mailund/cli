@@ -180,7 +180,7 @@ func TestCommandCalled(t *testing.T) {
 	}
 }
 
-func TestOption(t *testing.T) {
+func TestOption(t *testing.T) { //nolint:funlen // it's okay to be long
 	called := false
 
 	type argv struct {
@@ -208,7 +208,11 @@ func TestOption(t *testing.T) {
 
 	builder := new(strings.Builder)
 	cmd.SetOutput(builder)
-	cmd.Run([]string{"-x", "foo"}) // wrong type for int
+
+	err = cmd.RunError([]string{"-x", "foo"}) // wrong type for int
+	if err == nil {
+		t.Error("expected an error")
+	}
 
 	if called {
 		t.Error("The command shouldn't be called")
