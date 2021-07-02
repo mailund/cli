@@ -43,7 +43,7 @@ type FlagValueDescription interface {
 	FlagValueDescription() string // Modify or add to the description string
 }
 
-// Validate is an interface that is run after parameters are initialised
+// Validator is an interface that is run after parameters are initialised
 // but before they are parsed, and can be used to check consistency
 // of default values. The flag is true if validating a flag and false otherwise.
 type Validator interface {

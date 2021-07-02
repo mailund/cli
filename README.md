@@ -237,7 +237,6 @@ type VariadicValue interface {
 
 can be used as variadic parameters.
 
-
 ## Subcommands
 
 You can nest commands to make subcommands. Say we want a tool that can do both addition and multiplication. We can create a command with two subcommands to achieve this. The straightforward way to do this is to give a command a `Subcommands` in its specification. It can look like this:
@@ -632,7 +631,6 @@ func (val *IntValue) Set(x string) error {
 
 Flags also need a way to obtain the default value when printing usage help, so flags have the `FlagValue` interface:
 
-
 ```go
 type FlagValue interface {
   String() string   // Should return a string representation of the value
@@ -822,7 +820,6 @@ Usage: choices [flags] b
 
 Demonstration of the difficult task of making choices.
 
-
 Flags:
   -h,--help
   show help for choices
@@ -835,7 +832,6 @@ Arguments:
 ```
 
 The `Choice` type is already implemented in `cli`, so if you want it as described here, you can use `cli.Choice`. Ideally, it should get its options as keys from a map, as that is often how we handle choices, but it is an ugly interface to do this through reflection, and cumbersome to do it using code generation, so I am waiting for generics before I add that feature.
-
 
 For flags, there can be additional constraints. Some flags, for example, should not take arguments. If you don't want them to, then implement the `NoValueFlag` interface:
 
