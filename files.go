@@ -13,6 +13,7 @@ type OutFile struct {
 	Fname string
 }
 
+// Open opens a file given by name
 func (o *OutFile) Open(fname string) error {
 	f, err := os.Create(fname)
 	if err != nil {
@@ -80,6 +81,7 @@ type InFile struct {
 	Fname string
 }
 
+// Open opens a file given by name
 func (in *InFile) Open(fname string) error {
 	f, err := os.Open(fname)
 	if err != nil {
