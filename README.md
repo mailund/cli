@@ -814,7 +814,7 @@ func main()                { /* same as before */ }
 
 Run the program with `-h` now, and you get the more informative help:
 
-```
+```sh
 > choice -h
 Usage: choices [flags] b
 
@@ -856,7 +856,6 @@ The first two methods ensure that we can use them as both flags and positional a
 Boolean flags are a little different. There, we usually want `--foo` to mean that the boolean value should be set to `true`, but we also want `--foo=true` and `--foo=false` to be valid. So, those flags have defaults. Well, all flags have defaults, but there is the default value when the flag is not used, and then the default value when we use it. For a boolean flag, usually the default if `false`, but `--foo` is interpreted as `--foo=true`, so `true` is the default string we should pass to the flag's `Set(string) error` method.
 
 To handle those flags, we have the `DefaultValueFlag` interface:
-
 
 ```go
 type DefaultValueFlag interface {

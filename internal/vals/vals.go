@@ -1,5 +1,5 @@
-// Implementations of Values interfaces for wrapping flags and positional
-// arguments
+// Package vals contain interfaces for errors and for
+// command line value protocols.
 package vals
 
 import (
